@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-tertiary: #1a1a1a;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --accent: #3b82f6;
+  --border: #27272a;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.card {
+  background-color: rgb(24 24 27);
+  border: 1px solid rgb(39 39 42);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.btn-primary {
+  background-color: rgb(37 99 235);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: rgb(29 78 216);
+}
+
+.btn-secondary {
+  background-color: rgb(39 39 42);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: rgb(63 63 70);
+}
+
+.input {
+  background-color: rgb(24 24 27);
+  border: 1px solid rgb(39 39 42);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  color: white;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgb(59 130 246);
+}
