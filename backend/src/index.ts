@@ -47,12 +47,16 @@ app.use('/api/settings', settingsRouter);
 
 // Dashboard stats endpoint
 app.get('/api/stats', async (req, res) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   const [
     totalPersonas,
     totalPosts,
-    pendingPosts,
+    pendingApproval,
     publishedPosts,
     scheduledPosts,
+    publishedToday,
     recentPosts
   ] = await Promise.all([
     prisma.persona.count({ where: { active: true } }),
@@ -60,6 +64,12 @@ app.get('/api/stats', async (req, res) => {
     prisma.post.count({ where: { status: 'PENDING' } }),
     prisma.post.count({ where: { status: 'PUBLISHED' } }),
     prisma.post.count({ where: { status: 'SCHEDULED' } }),
+    prisma.post.count({
+      where: {
+        status: 'PUBLISHED',
+        publishedAt: { gte: today }
+      }
+    }),
     prisma.post.findMany({
       where: { status: 'PUBLISHED' },
       orderBy: { publishedAt: 'desc' },
@@ -68,23 +78,13 @@ app.get('/api/stats', async (req, res) => {
     })
   ]);
 
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  
-  const postsThisWeek = await prisma.post.count({
-    where: {
-      status: 'PUBLISHED',
-      publishedAt: { gte: weekAgo }
-    }
-  });
-
   res.json({
     totalPersonas,
     totalPosts,
-    pendingPosts,
+    pendingApproval,
     publishedPosts,
     scheduledPosts,
-    postsThisWeek,
+    publishedToday,
     recentPosts
   });
 });
