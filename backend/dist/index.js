@@ -17,6 +17,7 @@ const topics_1 = __importDefault(require("./routes/topics"));
 const generate_1 = __importDefault(require("./routes/generate"));
 const threads_1 = __importDefault(require("./routes/threads"));
 const settings_1 = __importDefault(require("./routes/settings"));
+const trends_1 = __importDefault(require("./routes/trends"));
 const scheduler_1 = require("./services/scheduler");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -43,6 +44,7 @@ app.use('/api/topics', topics_1.default);
 app.use('/api/generate', generate_1.default);
 app.use('/api/threads', threads_1.default);
 app.use('/api/settings', settings_1.default);
+app.use('/api/trends', trends_1.default);
 // Dashboard stats endpoint
 app.get('/api/stats', async (req, res) => {
     const [totalPersonas, totalPosts, pendingPosts, publishedPosts, scheduledPosts, recentPosts] = await Promise.all([

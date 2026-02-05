@@ -4,9 +4,11 @@ import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Personas from './pages/Personas'
 import Posts from './pages/Posts'
+import Trends from './pages/Trends'
+import Schedules from './pages/Schedules'
 import Settings from './pages/Settings'
 
-type Page = 'dashboard' | 'personas' | 'posts' | 'settings'
+type Page = 'dashboard' | 'personas' | 'posts' | 'trends' | 'schedules' | 'settings'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
@@ -19,6 +21,10 @@ function App() {
         return <Personas />
       case 'posts':
         return <Posts />
+      case 'trends':
+        return <Trends />
+      case 'schedules':
+        return <Schedules />
       case 'settings':
         return <Settings />
       default:
@@ -27,11 +33,39 @@ function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-zinc-950">
-      <Toaster position="top-right" />
+    <div className="flex min-h-screen bg-[rgb(var(--background))]">
+      <Toaster 
+        position="top-center"
+        containerClassName="!top-16 md:!top-4"
+        toastOptions={{
+          style: {
+            background: 'rgb(var(--card))',
+            color: 'rgb(var(--foreground))',
+            border: '1px solid rgb(var(--border))',
+            borderRadius: '0.75rem',
+            fontSize: '14px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: 'white',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: 'white',
+            },
+          },
+        }}
+      />
       <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
-      <main className="flex-1 p-8 overflow-auto">
-        {renderPage()}
+      
+      {/* Main content with mobile header offset */}
+      <main className="flex-1 overflow-auto pt-14 md:pt-0">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in">
+          {renderPage()}
+        </div>
       </main>
     </div>
   )

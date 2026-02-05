@@ -1,7 +1,8 @@
 import cron from 'node-cron';
 import { PrismaClient } from '@prisma/client';
 import { generatePost } from './ai';
-import { publishToThreads } from './threads';
+import { publishToThreads, refreshAccessToken } from './threads';
+import { getBestTopicForPersona, fetchAllTrends } from './trends';
 
 let prisma: PrismaClient;
 
@@ -21,7 +22,27 @@ export function initScheduler(prismaClient: PrismaClient) {
     await generateScheduledPosts();
   });
 
-  console.log('📅 Scheduler started');
+  // Sync trending topics every 2 hours
+  cron.schedule('0 */2 * * *', async () => {
+    await syncTrendingTopics();
+  });
+
+  // Refresh Threads tokens daily at 3 AM
+  cron.schedule('0 3 * * *', async () => {
+    await refreshAllTokens();
+  });
+
+  // Cleanup old trending topics weekly on Sunday
+  cron.schedule('0 4 * * 0', async () => {
+    await cleanupOldTopics();
+  });
+
+  console.log('📅 Scheduler started with:');
+  console.log('   - Post publishing check: every minute');
+  console.log('   - Post generation: every hour');
+  console.log('   - Trending sync: every 2 hours');
+  console.log('   - Token refresh: daily at 3 AM');
+  console.log('   - Topic cleanup: weekly on Sunday');
 }
 
 /**
@@ -30,7 +51,6 @@ export function initScheduler(prismaClient: PrismaClient) {
 async function processScheduledPosts() {
   const now = new Date();
 
-  // Find posts that should be published
   const posts = await prisma.post.findMany({
     where: {
       status: 'SCHEDULED',
@@ -100,12 +120,12 @@ async function processScheduledPosts() {
 
 /**
  * Generate new posts based on active schedules
+ * Now uses smart topic selection instead of random
  */
 async function generateScheduledPosts() {
   const now = new Date();
   const currentHour = now.getUTCHours().toString().padStart(2, '0') + ':00';
 
-  // Find active schedules that should post at this hour
   const schedules = await prisma.schedule.findMany({
     where: {
       active: true,
@@ -119,50 +139,192 @@ async function generateScheduledPosts() {
     }
   });
 
+  console.log(`🕐 Checking schedules for ${currentHour} UTC - found ${schedules.length}`);
+
   for (const schedule of schedules) {
     try {
-      // Get a random topic
-      const topics = await prisma.topic.findMany({
-        where: { active: true }
-      });
-
-      if (topics.length === 0) {
-        console.log(`⚠️ No active topics for schedule ${schedule.id}`);
-        continue;
-      }
-
-      const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-
-      // Get AI settings
-      const settings = await prisma.settings.findUnique({
-        where: { id: 'default' }
-      });
-
-      // Generate post
-      const content = await generatePost({
-        persona: schedule.persona,
-        topic: randomTopic.source,
-        model: settings?.aiModel,
-        temperature: settings?.aiTemp
-      });
-
-      // Create post
-      const post = await prisma.post.create({
-        data: {
+      // Get recent topics used by this persona
+      const recentPosts = await prisma.post.findMany({
+        where: { 
           personaId: schedule.personaId,
-          accountId: schedule.accountId,
-          content,
-          topic: randomTopic.title || randomTopic.source,
-          status: schedule.autoApprove ? 'SCHEDULED' : 'PENDING',
-          scheduledAt: schedule.autoApprove ? new Date() : null
-        }
+          topic: { not: null }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: { topic: true }
       });
+      
+      const excludeTitles = recentPosts
+        .map(p => p.topic)
+        .filter((t): t is string => t !== null);
 
-      console.log(`📝 Generated post ${post.id} for ${schedule.persona.name} (${schedule.autoApprove ? 'auto-scheduled' : 'pending approval'})`);
+      // Get best trending topic for this persona
+      const bestTopic = await getBestTopicForPersona(schedule.persona, excludeTitles);
+      
+      if (!bestTopic) {
+        // Fallback to manual topics from database
+        const manualTopics = await prisma.topic.findMany({
+          where: { active: true, type: 'MANUAL' }
+        });
+        
+        if (manualTopics.length === 0) {
+          console.log(`⚠️ No topics available for ${schedule.persona.name}`);
+          continue;
+        }
+        
+        const randomTopic = manualTopics[Math.floor(Math.random() * manualTopics.length)];
+        
+        await generateAndSavePost(schedule, randomTopic.source, randomTopic.title);
+      } else {
+        await generateAndSavePost(schedule, bestTopic.title, bestTopic.title);
+      }
     } catch (error) {
       console.error(`❌ Error generating post for schedule ${schedule.id}:`, error);
     }
   }
+}
+
+/**
+ * Helper to generate and save a post
+ */
+async function generateAndSavePost(
+  schedule: any,
+  topicSource: string,
+  topicTitle: string | null
+) {
+  const settings = await prisma.settings.findUnique({
+    where: { id: 'default' }
+  });
+
+  const content = await generatePost({
+    persona: schedule.persona,
+    topic: topicSource,
+    model: settings?.aiModel,
+    temperature: settings?.aiTemp
+  });
+
+  // Calculate scheduled time (now + small random delay to seem more human)
+  const delay = Math.floor(Math.random() * 10) * 60 * 1000; // 0-10 min random delay
+  const scheduledAt = new Date(Date.now() + delay);
+
+  const post = await prisma.post.create({
+    data: {
+      personaId: schedule.personaId,
+      accountId: schedule.accountId,
+      content,
+      topic: topicTitle || topicSource,
+      status: schedule.autoApprove ? 'SCHEDULED' : 'PENDING',
+      scheduledAt: schedule.autoApprove ? scheduledAt : null
+    }
+  });
+
+  console.log(`📝 Generated post ${post.id} for ${schedule.persona.name}`);
+  console.log(`   Topic: "${topicTitle || topicSource}"`);
+  console.log(`   Status: ${schedule.autoApprove ? 'auto-scheduled' : 'pending approval'}`);
+}
+
+/**
+ * Sync trending topics from all sources
+ */
+async function syncTrendingTopics() {
+  console.log('🔄 Syncing trending topics...');
+  
+  try {
+    const trends = await fetchAllTrends();
+    
+    let created = 0;
+    
+    for (const trend of trends) {
+      const existing = await prisma.topic.findFirst({
+        where: {
+          source: trend.title,
+          type: 'TRENDING'
+        }
+      });
+      
+      if (!existing) {
+        await prisma.topic.create({
+          data: {
+            type: 'TRENDING',
+            source: trend.title,
+            title: trend.title,
+            description: trend.description,
+            active: true,
+            lastFetched: new Date()
+          }
+        });
+        created++;
+      }
+    }
+    
+    console.log(`✅ Trending sync complete: ${created} new topics from ${trends.length} total`);
+  } catch (error) {
+    console.error('❌ Error syncing trends:', error);
+  }
+}
+
+/**
+ * Refresh all Threads access tokens that are expiring soon
+ */
+async function refreshAllTokens() {
+  console.log('🔑 Checking Threads tokens...');
+  
+  const accounts = await prisma.account.findMany({
+    where: {
+      active: true,
+      accessToken: { not: null },
+      tokenExpiresAt: { not: null }
+    }
+  });
+  
+  const now = new Date();
+  const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  
+  for (const account of accounts) {
+    if (!account.tokenExpiresAt || !account.accessToken) continue;
+    
+    // Refresh if expiring in less than 7 days
+    if (account.tokenExpiresAt < sevenDaysFromNow) {
+      try {
+        const result = await refreshAccessToken(account.accessToken);
+        
+        const newExpiry = new Date(Date.now() + result.expiresIn * 1000);
+        
+        await prisma.account.update({
+          where: { id: account.id },
+          data: {
+            accessToken: result.accessToken,
+            tokenExpiresAt: newExpiry
+          }
+        });
+        
+        console.log(`✅ Refreshed token for account ${account.name}`);
+      } catch (error) {
+        console.error(`❌ Failed to refresh token for ${account.name}:`, error);
+      }
+    }
+  }
+  
+  console.log('🔑 Token check complete');
+}
+
+/**
+ * Cleanup old trending topics
+ */
+async function cleanupOldTopics() {
+  console.log('🧹 Cleaning up old trending topics...');
+  
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  
+  const result = await prisma.topic.deleteMany({
+    where: {
+      type: 'TRENDING',
+      createdAt: { lt: weekAgo }
+    }
+  });
+  
+  console.log(`🧹 Deleted ${result.count} old trending topics`);
 }
 
 /**

@@ -12,6 +12,7 @@ import topicsRouter from './routes/topics';
 import generateRouter from './routes/generate';
 import threadsRouter from './routes/threads';
 import settingsRouter from './routes/settings';
+import trendsRouter from './routes/trends';
 import { initScheduler } from './services/scheduler';
 
 dotenv.config();
@@ -44,6 +45,7 @@ app.use('/api/topics', topicsRouter);
 app.use('/api/generate', generateRouter);
 app.use('/api/threads', threadsRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/trends', trendsRouter);
 
 // Dashboard stats endpoint
 app.get('/api/stats', async (req, res) => {

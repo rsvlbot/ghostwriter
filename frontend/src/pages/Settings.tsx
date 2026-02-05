@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Save, ExternalLink, CheckCircle, XCircle } from 'lucide-react'
+import { Save, ExternalLink, CheckCircle, XCircle, Cpu, Link2, Info, Zap } from 'lucide-react'
 import { api } from '../lib/api'
 import toast from 'react-hot-toast'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Select, Slider, Skeleton, Badge } from '../components/ui'
+import { cn } from '../lib/utils'
 
 export default function Settings() {
   const [settings, setSettings] = useState<any>(null)
@@ -57,130 +59,181 @@ export default function Settings() {
   }
 
   if (loading) {
-    return <div className="text-zinc-500">Loading...</div>
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-4 w-64 mt-2" />
+        </div>
+        <Skeleton className="h-64 rounded-xl" />
+        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-48 rounded-xl" />
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="space-y-6 max-w-2xl">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-zinc-500">Configure your Ghostwriter instance</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-[rgb(var(--muted-foreground))] mt-1 text-sm sm:text-base">
+          Configure your Ghostwriter instance
+        </p>
       </div>
 
       {/* AI Settings */}
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">AI Configuration</h2>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-zinc-400 mb-2">Model</label>
-            <select
-              className="input w-full"
+      <Card>
+        <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-[rgb(var(--primary))] shadow-lg shadow-[rgb(var(--primary))/0.2]">
+              <Cpu className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-base sm:text-lg">AI Configuration</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Model and generation settings</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 pt-2 sm:pt-0 space-y-5 sm:space-y-6">
+          {/* Model Select */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Model</label>
+            <Select
               value={settings?.aiModel || ''}
               onChange={(e) => setSettings({ ...settings, aiModel: e.target.value })}
+              className="h-11 sm:h-10"
             >
               {settings?.availableModels?.map((model: any) => (
                 <option key={model.id} value={model.id}>
                   {model.name} ({model.provider})
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
-          <div>
-            <label className="block text-sm text-zinc-400 mb-2">
-              Temperature: {settings?.aiTemp?.toFixed(2)}
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1.5"
-              step="0.05"
+          {/* Temperature Slider */}
+          <div className="space-y-3">
+            <Slider
+              label="Temperature"
+              showValue
+              min={0}
+              max={1.5}
+              step={0.05}
               value={settings?.aiTemp || 0.8}
               onChange={(e) => setSettings({ ...settings, aiTemp: parseFloat(e.target.value) })}
-              className="w-full"
             />
-            <p className="text-xs text-zinc-600 mt-1">
-              Lower = more focused, Higher = more creative
-            </p>
+            <div className="flex items-center gap-2 text-xs text-[rgb(var(--muted-foreground))]">
+              <Info className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Lower = more focused, Higher = more creative</span>
+            </div>
           </div>
 
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="btn-primary flex items-center gap-2"
+          <Button 
+            onClick={handleSave} 
+            disabled={saving} 
+            className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation"
           >
             <Save className="w-4 h-4" />
             {saving ? 'Saving...' : 'Save Settings'}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Threads Connection */}
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Threads Connection</h2>
-        
-        <div className="flex items-center gap-3 mb-4">
-          {threadsStatus?.configured ? (
-            <>
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              <span className="text-green-500">API Configured</span>
-            </>
-          ) : (
-            <>
-              <XCircle className="w-5 h-5 text-red-500" />
-              <span className="text-red-500">Not Configured</span>
-            </>
+      <Card>
+        <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-neutral-800 border border-neutral-700">
+                <Link2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-base sm:text-lg">Threads Connection</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Connect to publish posts</CardDescription>
+              </div>
+            </div>
+            {threadsStatus?.configured ? (
+              <Badge variant="success" className="flex items-center gap-1 self-start sm:self-auto">
+                <CheckCircle className="w-3.5 h-3.5" />
+                Configured
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="flex items-center gap-1 self-start sm:self-auto">
+                <XCircle className="w-3.5 h-3.5" />
+                Not Configured
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 pt-2 sm:pt-0">
+          {!threadsStatus?.configured && (
+            <div className="p-3 sm:p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
+              <p className="text-sm text-amber-400">
+                Set <code className="px-1 py-0.5 rounded bg-[rgb(var(--muted))] text-xs">THREADS_APP_ID</code> and{' '}
+                <code className="px-1 py-0.5 rounded bg-[rgb(var(--muted))] text-xs">THREADS_APP_SECRET</code> in your environment.
+              </p>
+            </div>
           )}
-        </div>
 
-        {!threadsStatus?.configured && (
-          <p className="text-sm text-zinc-500 mb-4">
-            Set THREADS_APP_ID and THREADS_APP_SECRET in your environment variables.
-          </p>
-        )}
-
-        <button
-          onClick={handleConnectThreads}
-          disabled={!threadsStatus?.configured}
-          className="btn-secondary flex items-center gap-2 disabled:opacity-50"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Connect Threads Account
-        </button>
-      </div>
+          <Button
+            variant="secondary"
+            onClick={handleConnectThreads}
+            disabled={!threadsStatus?.configured}
+            className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Connect Threads Account
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* System Info */}
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">System Info</h2>
-        
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-zinc-500">Version</span>
-            <p>{systemInfo?.version || '-'}</p>
+      <Card>
+        <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-neutral-800 border border-neutral-700">
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-[rgb(var(--primary))]" />
+            </div>
+            <div>
+              <CardTitle className="text-base sm:text-lg">System Info</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Runtime and statistics</CardDescription>
+            </div>
           </div>
-          <div>
-            <span className="text-zinc-500">Node</span>
-            <p>{systemInfo?.nodeVersion || '-'}</p>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 pt-2 sm:pt-0">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {[
+              { label: 'Version', value: systemInfo?.version || '-' },
+              { label: 'Node', value: systemInfo?.nodeVersion || '-' },
+              { label: 'Personas', value: systemInfo?.stats?.personas || 0 },
+              { label: 'Total Posts', value: systemInfo?.stats?.posts || 0 },
+              { 
+                label: 'AI', 
+                value: systemInfo?.ai?.configured ? '✅ Yes' : '❌ No',
+                highlight: systemInfo?.ai?.configured
+              },
+              { 
+                label: 'Uptime', 
+                value: systemInfo?.uptime ? `${Math.floor(systemInfo.uptime / 60)}m` : '-' 
+              },
+            ].map((item) => (
+              <div 
+                key={item.label} 
+                className={cn(
+                  'p-2.5 sm:p-3 rounded-lg bg-[rgb(var(--muted))/0.5]',
+                  item.highlight && 'bg-emerald-500/10 border border-emerald-500/20'
+                )}
+              >
+                <span className="text-[10px] sm:text-xs text-[rgb(var(--muted-foreground))] uppercase tracking-wider">
+                  {item.label}
+                </span>
+                <p className="font-medium mt-0.5 text-sm sm:text-base">{item.value}</p>
+              </div>
+            ))}
           </div>
-          <div>
-            <span className="text-zinc-500">Personas</span>
-            <p>{systemInfo?.stats?.personas || 0}</p>
-          </div>
-          <div>
-            <span className="text-zinc-500">Total Posts</span>
-            <p>{systemInfo?.stats?.posts || 0}</p>
-          </div>
-          <div>
-            <span className="text-zinc-500">AI Configured</span>
-            <p>{systemInfo?.ai?.configured ? '✅ Yes' : '❌ No'}</p>
-          </div>
-          <div>
-            <span className="text-zinc-500">Uptime</span>
-            <p>{systemInfo?.uptime ? `${Math.floor(systemInfo.uptime / 60)} min` : '-'}</p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

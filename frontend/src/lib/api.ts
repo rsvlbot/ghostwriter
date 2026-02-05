@@ -82,4 +82,34 @@ export const api = {
 
   // Accounts
   getAccounts: () => request<any[]>('/api/accounts'),
+
+  // Trends
+  getTrends: () => request<{ count: number; trends: any[] }>('/api/trends'),
+  getTrendsBySource: (source: 'google' | 'hackernews' | 'reddit') => 
+    request<{ source: string; count: number; trends: any[] }>(`/api/trends/${source}`),
+  getBestTopic: (personaId: string) => 
+    request<{ persona: any; topic: any }>(`/api/trends/best/${personaId}`),
+  syncTrends: () => request<{ created: number; skipped: number }>('/api/trends/sync', { method: 'POST' }),
+
+  // Schedules
+  getSchedules: () => request<any[]>('/api/schedules'),
+  createSchedule: (data: any) => request<any>('/api/schedules', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  updateSchedule: (id: string, data: any) => request<any>(`/api/schedules/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  toggleSchedule: (id: string) => request<any>(`/api/schedules/${id}/toggle`, { method: 'PATCH' }),
+  deleteSchedule: (id: string) => request<void>(`/api/schedules/${id}`, { method: 'DELETE' }),
+
+  // Topics
+  getTopics: () => request<any[]>('/api/topics'),
+  createTopic: (data: any) => request<any>('/api/topics', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  toggleTopic: (id: string) => request<any>(`/api/topics/${id}/toggle`, { method: 'PATCH' }),
+  deleteTopic: (id: string) => request<void>(`/api/topics/${id}`, { method: 'DELETE' }),
 }

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Check, X, Send, Trash2, Clock, AlertCircle } from 'lucide-react'
 import { api } from '../lib/api'
 import toast from 'react-hot-toast'
+import { Card, CardContent, Button, Badge, Skeleton, EmptyState, Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui'
+import { Avatar, AvatarFallback } from '../components/ui/avatar'
 
 interface Post {
   id: string
@@ -19,19 +21,18 @@ const statusTabs = [
   { id: 'DRAFT', label: 'Drafts' },
   { id: 'PENDING', label: 'Pending' },
   { id: 'APPROVED', label: 'Approved' },
-  { id: 'SCHEDULED', label: 'Scheduled' },
   { id: 'PUBLISHED', label: 'Published' },
   { id: 'FAILED', label: 'Failed' },
 ]
 
-const statusColors: Record<string, string> = {
-  DRAFT: 'bg-zinc-600',
-  PENDING: 'bg-yellow-600',
-  APPROVED: 'bg-blue-600',
-  SCHEDULED: 'bg-purple-600',
-  PUBLISHED: 'bg-green-600',
-  REJECTED: 'bg-red-600',
-  FAILED: 'bg-red-600',
+const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info' | 'purple'> = {
+  DRAFT: 'secondary',
+  PENDING: 'warning',
+  APPROVED: 'info',
+  SCHEDULED: 'purple',
+  PUBLISHED: 'success',
+  REJECTED: 'destructive',
+  FAILED: 'destructive',
 }
 
 export default function Posts() {
@@ -98,108 +99,156 @@ export default function Posts() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Posts</h1>
-        <p className="text-zinc-500">Manage generated posts</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Posts</h1>
+        <p className="text-[rgb(var(--muted-foreground))] mt-1 text-sm sm:text-base">
+          Manage and approve generated posts
+        </p>
       </div>
 
-      <div className="flex gap-2 border-b border-zinc-800 pb-2">
-        {statusTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-              activeTab === tab.id
-                ? 'bg-zinc-800 text-white'
-                : 'text-zinc-500 hover:text-white'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="text-zinc-500">Loading...</div>
-      ) : posts.length === 0 ? (
-        <div className="text-center py-12 text-zinc-500">
-          <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>No posts found</p>
+      {/* Tabs - horizontal scroll on mobile */}
+      <Tabs defaultValue="" value={activeTab} onValueChange={setActiveTab}>
+        <div className="-mx-4 sm:mx-0 px-4 sm:px-0 overflow-x-auto scrollbar-hide">
+          <TabsList className="w-max sm:w-auto">
+            {statusTabs.map((tab) => (
+              <TabsTrigger key={tab.id} value={tab.id} className="px-3 sm:px-4">
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </div>
-      ) : (
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <div key={post.id} className="card">
-              <div className="flex items-start gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2 py-0.5 rounded text-xs ${statusColors[post.status] || 'bg-zinc-600'}`}>
-                      {post.status}
-                    </span>
-                    {post.persona && (
-                      <span className="text-sm text-zinc-500">{post.persona.name}</span>
-                    )}
-                    {post.topic && (
-                      <span className="text-xs text-zinc-600">• {post.topic}</span>
-                    )}
-                  </div>
-                  
-                  <p className="text-zinc-200 whitespace-pre-wrap">{post.content}</p>
-                  
-                  {post.error && (
-                    <p className="text-sm text-red-400 mt-2 flex items-center gap-1">
-                      <AlertCircle className="w-4 h-4" /> {post.error}
-                    </p>
-                  )}
-                  
-                  {post.publishedAt && (
-                    <p className="text-xs text-zinc-600 mt-2">
-                      Published: {new Date(post.publishedAt).toLocaleString()}
-                    </p>
-                  )}
-                </div>
 
-                <div className="flex gap-2">
-                  {(post.status === 'DRAFT' || post.status === 'PENDING') && (
-                    <>
-                      <button
-                        onClick={() => handleApprove(post.id)}
-                        className="p-2 rounded-lg bg-green-600/20 text-green-500 hover:bg-green-600/30"
-                        title="Approve"
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleReject(post.id)}
-                        className="p-2 rounded-lg bg-red-600/20 text-red-500 hover:bg-red-600/30"
-                        title="Reject"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </>
-                  )}
-                  {post.status === 'APPROVED' && (
-                    <button
-                      onClick={() => handlePublish(post.id)}
-                      className="p-2 rounded-lg bg-blue-600/20 text-blue-500 hover:bg-blue-600/30"
-                      title="Publish Now"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDelete(post.id)}
-                    className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+        <TabsContent value={activeTab}>
+          {loading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-32 sm:h-40 rounded-xl" />
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          ) : posts.length === 0 ? (
+            <EmptyState
+              icon={<Clock className="w-12 h-12" />}
+              title="No posts found"
+              description={activeTab ? `No ${activeTab.toLowerCase()} posts` : 'Generate some posts from the Personas page!'}
+            />
+          ) : (
+            <div className="space-y-4">
+              {posts.map((post, index) => (
+                <Card 
+                  key={post.id} 
+                  className="group hover:border-[rgb(var(--primary))/0.3] transition-all animate-fade-in"
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
+                  <CardContent className="p-4 sm:p-5">
+                    {/* Mobile: Stack layout */}
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                      {/* Avatar - hidden on small mobile */}
+                      <Avatar className="hidden sm:flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
+                        <AvatarFallback>
+                          {post.persona?.name?.[0] || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        {/* Meta row */}
+                        <div className="flex items-center gap-2 flex-wrap mb-2 sm:mb-3">
+                          {/* Mobile avatar inline */}
+                          <Avatar className="sm:hidden h-6 w-6 flex-shrink-0">
+                            <AvatarFallback className="text-xs">
+                              {post.persona?.name?.[0] || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <Badge variant={statusVariants[post.status] || 'secondary'}>
+                            {post.status}
+                          </Badge>
+                          {post.persona && (
+                            <span className="text-sm font-medium text-[rgb(var(--foreground))]">
+                              {post.persona.name}
+                            </span>
+                          )}
+                          {post.topic && (
+                            <span className="text-xs text-[rgb(var(--muted-foreground))] hidden sm:inline">
+                              • {post.topic}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Post content */}
+                        <p className="text-[rgb(var(--foreground))] whitespace-pre-wrap leading-relaxed text-sm sm:text-base">
+                          {post.content}
+                        </p>
+                        
+                        {/* Error */}
+                        {post.error && (
+                          <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                            <p className="text-sm text-red-400">{post.error}</p>
+                          </div>
+                        )}
+                        
+                        {/* Published date */}
+                        {post.publishedAt && (
+                          <p className="text-xs text-[rgb(var(--muted-foreground))] mt-3">
+                            Published: {new Date(post.publishedAt).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Actions - bottom on mobile, right side on desktop */}
+                      <div className="flex gap-2 sm:flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[rgb(var(--border))] mt-2 sm:mt-0">
+                        {(post.status === 'DRAFT' || post.status === 'PENDING') && (
+                          <>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleApprove(post.id)}
+                              className="h-10 w-10 sm:h-9 sm:w-9 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 touch-manipulation"
+                              title="Approve"
+                            >
+                              <Check className="w-5 h-5 sm:w-4 sm:h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleReject(post.id)}
+                              className="h-10 w-10 sm:h-9 sm:w-9 text-red-500 hover:text-red-400 hover:bg-red-500/10 touch-manipulation"
+                              title="Reject"
+                            >
+                              <X className="w-5 h-5 sm:w-4 sm:h-4" />
+                            </Button>
+                          </>
+                        )}
+                        {post.status === 'APPROVED' && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handlePublish(post.id)}
+                            className="h-10 w-10 sm:h-9 sm:w-9 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 touch-manipulation"
+                            title="Publish Now"
+                          >
+                            <Send className="w-5 h-5 sm:w-4 sm:h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDelete(post.id)}
+                          className="h-10 w-10 sm:h-9 sm:w-9 text-[rgb(var(--muted-foreground))] hover:text-red-400 hover:bg-red-500/10 touch-manipulation ml-auto sm:ml-0"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
