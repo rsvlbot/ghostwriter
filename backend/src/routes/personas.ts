@@ -17,7 +17,22 @@ const PersonaSchema = z.object({
   active: z.boolean().default(true)
 });
 
-// Get all personas
+/**
+ * @openapi
+ * /api/personas:
+ *   get:
+ *     summary: Get all personas
+ *     tags: [Personas]
+ *     responses:
+ *       200:
+ *         description: List of personas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Persona'
+ */
 router.get('/', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   const personas = await prisma.persona.findMany({
@@ -31,7 +46,29 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(personas);
 });
 
-// Get single persona
+/**
+ * @openapi
+ * /api/personas/{id}:
+ *   get:
+ *     summary: Get persona by ID
+ *     tags: [Personas]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Persona details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Persona'
+ *       404:
+ *         description: Persona not found
+ */
 router.get('/:id', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   const persona = await prisma.persona.findUnique({
@@ -52,7 +89,45 @@ router.get('/:id', async (req: Request, res: Response) => {
   res.json(persona);
 });
 
-// Create persona
+/**
+ * @openapi
+ * /api/personas:
+ *   post:
+ *     summary: Create a new persona
+ *     tags: [Personas]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, handle, style, systemPrompt]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Marcus Aurelius
+ *               handle:
+ *                 type: string
+ *                 example: emperor_marcus
+ *               era:
+ *                 type: string
+ *                 example: 121-180 AD
+ *               occupation:
+ *                 type: string
+ *                 example: Roman Emperor, Stoic Philosopher
+ *               style:
+ *                 type: string
+ *                 example: Contemplative, measured, focused on virtue
+ *               sampleQuotes:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               systemPrompt:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Persona created
+ */
 router.post('/', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   const data = PersonaSchema.parse(req.body);
@@ -64,7 +139,28 @@ router.post('/', async (req: Request, res: Response) => {
   res.status(201).json(persona);
 });
 
-// Update persona
+/**
+ * @openapi
+ * /api/personas/{id}:
+ *   put:
+ *     summary: Update a persona
+ *     tags: [Personas]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Persona'
+ *     responses:
+ *       200:
+ *         description: Persona updated
+ */
 router.put('/:id', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   const data = PersonaSchema.partial().parse(req.body);
@@ -77,7 +173,23 @@ router.put('/:id', async (req: Request, res: Response) => {
   res.json(persona);
 });
 
-// Delete persona
+/**
+ * @openapi
+ * /api/personas/{id}:
+ *   delete:
+ *     summary: Delete a persona
+ *     tags: [Personas]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       204:
+ *         description: Persona deleted
+ */
 router.delete('/:id', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   
@@ -88,7 +200,23 @@ router.delete('/:id', async (req: Request, res: Response) => {
   res.status(204).send();
 });
 
-// Toggle active status
+/**
+ * @openapi
+ * /api/personas/{id}/toggle:
+ *   patch:
+ *     summary: Toggle persona active status
+ *     tags: [Personas]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Persona status toggled
+ */
 router.patch('/:id/toggle', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   

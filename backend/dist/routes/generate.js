@@ -23,7 +23,64 @@ const TestGenerateSchema = zod_1.z.object({
     }),
     topic: zod_1.z.string().min(1)
 });
-// Generate post(s) for a persona
+/**
+ * @openapi
+ * /api/generate:
+ *   post:
+ *     summary: Generate post(s) for a persona
+ *     description: Uses AI to generate social media content in the style of the specified persona
+ *     tags: [Generate]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [personaId, topic]
+ *             properties:
+ *               personaId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID of the persona to generate as
+ *               topic:
+ *                 type: string
+ *                 description: Topic to generate content about
+ *                 example: The ethics of artificial intelligence
+ *               count:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *                 default: 1
+ *                 description: Number of posts to generate
+ *               saveAsDraft:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Whether to save generated posts as drafts
+ *               accountId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Threads account to associate with the post
+ *     responses:
+ *       200:
+ *         description: Generated posts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 posts:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       content:
+ *                         type: string
+ *       404:
+ *         description: Persona not found
+ */
 router.post('/', async (req, res) => {
     const prisma = req.app.locals.prisma;
     const { personaId, topic, count, saveAsDraft, accountId } = GenerateSchema.parse(req.body);
@@ -83,7 +140,52 @@ router.post('/', async (req, res) => {
         }
     }
 });
-// Test generation without saving (for persona preview)
+/**
+ * @openapi
+ * /api/generate/test:
+ *   post:
+ *     summary: Test generation without saving
+ *     description: Generate a test post for persona preview without saving to database
+ *     tags: [Generate]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [persona, topic]
+ *             properties:
+ *               persona:
+ *                 type: object
+ *                 required: [name, style, systemPrompt]
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                   era:
+ *                     type: string
+ *                   occupation:
+ *                     type: string
+ *                   style:
+ *                     type: string
+ *                   sampleQuotes:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   systemPrompt:
+ *                     type: string
+ *               topic:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Generated test content
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 content:
+ *                   type: string
+ */
 router.post('/test', async (req, res) => {
     const prisma = req.app.locals.prisma;
     const { persona, topic } = TestGenerateSchema.parse(req.body);

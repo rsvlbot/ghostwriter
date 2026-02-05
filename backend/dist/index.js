@@ -7,8 +7,10 @@ require("express-async-errors");
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const client_1 = require("@prisma/client");
 const errorHandler_1 = require("./middleware/errorHandler");
+const swagger_1 = require("./swagger");
 const personas_1 = __importDefault(require("./routes/personas"));
 const posts_1 = __importDefault(require("./routes/posts"));
 const accounts_1 = __importDefault(require("./routes/accounts"));
@@ -31,7 +33,25 @@ app.use((0, cors_1.default)({
 app.use(express_1.default.json());
 // Make prisma available to routes
 app.locals.prisma = prisma;
-// Health check
+// Swagger UI
+app.use('/docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swagger_1.swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Ghostwriter API Docs',
+}));
+// Swagger JSON
+app.get('/docs.json', (req, res) => {
+    res.json(swagger_1.swaggerSpec);
+});
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     summary: Health check
+ *     tags: [Stats]
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ */
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
@@ -45,7 +65,20 @@ app.use('/api/generate', generate_1.default);
 app.use('/api/threads', threads_1.default);
 app.use('/api/settings', settings_1.default);
 app.use('/api/trends', trends_1.default);
-// Dashboard stats endpoint
+/**
+ * @openapi
+ * /api/stats:
+ *   get:
+ *     summary: Get dashboard statistics
+ *     tags: [Stats]
+ *     responses:
+ *       200:
+ *         description: Dashboard statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Stats'
+ */
 app.get('/api/stats', async (req, res) => {
     const [totalPersonas, totalPosts, pendingPosts, publishedPosts, scheduledPosts, recentPosts] = await Promise.all([
         prisma.persona.count({ where: { active: true } }),

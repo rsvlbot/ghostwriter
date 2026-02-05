@@ -2,8 +2,10 @@ import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
 import { PrismaClient } from '@prisma/client';
 import { errorHandler } from './middleware/errorHandler';
+import { swaggerSpec } from './swagger';
 import personasRouter from './routes/personas';
 import postsRouter from './routes/posts';
 import accountsRouter from './routes/accounts';
@@ -31,7 +33,27 @@ app.use(express.json());
 // Make prisma available to routes
 app.locals.prisma = prisma;
 
-// Health check
+// Swagger UI
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Ghostwriter API Docs',
+}));
+
+// Swagger JSON
+app.get('/docs.json', (req, res) => {
+  res.json(swaggerSpec);
+});
+
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     summary: Health check
+ *     tags: [Stats]
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ */
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
@@ -47,7 +69,20 @@ app.use('/api/threads', threadsRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/trends', trendsRouter);
 
-// Dashboard stats endpoint
+/**
+ * @openapi
+ * /api/stats:
+ *   get:
+ *     summary: Get dashboard statistics
+ *     tags: [Stats]
+ *     responses:
+ *       200:
+ *         description: Dashboard statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Stats'
+ */
 app.get('/api/stats', async (req, res) => {
   const [
     totalPersonas,

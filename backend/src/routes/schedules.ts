@@ -15,7 +15,22 @@ const ScheduleSchema = z.object({
   active: z.boolean().default(true)
 });
 
-// Get all schedules
+/**
+ * @openapi
+ * /api/schedules:
+ *   get:
+ *     summary: Get all schedules
+ *     tags: [Schedules]
+ *     responses:
+ *       200:
+ *         description: List of schedules
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Schedule'
+ */
 router.get('/', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   const schedules = await prisma.schedule.findMany({
@@ -32,7 +47,25 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(schedules);
 });
 
-// Get single schedule
+/**
+ * @openapi
+ * /api/schedules/{id}:
+ *   get:
+ *     summary: Get schedule by ID
+ *     tags: [Schedules]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Schedule details
+ *       404:
+ *         description: Schedule not found
+ */
 router.get('/:id', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   const schedule = await prisma.schedule.findUnique({
@@ -50,12 +83,55 @@ router.get('/:id', async (req: Request, res: Response) => {
   res.json(schedule);
 });
 
-// Create schedule
+/**
+ * @openapi
+ * /api/schedules:
+ *   post:
+ *     summary: Create a new schedule
+ *     description: Creates an automated posting schedule for a persona
+ *     tags: [Schedules]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [personaId, accountId]
+ *             properties:
+ *               personaId:
+ *                 type: string
+ *                 format: uuid
+ *               accountId:
+ *                 type: string
+ *                 format: uuid
+ *               postsPerDay:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 10
+ *                 default: 3
+ *               postingTimes:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   pattern: '^\d{2}:\d{2}$'
+ *                 default: ['09:00', '15:00', '21:00']
+ *               timezone:
+ *                 type: string
+ *                 default: UTC
+ *               autoApprove:
+ *                 type: boolean
+ *                 default: false
+ *                 description: If true, posts are automatically scheduled for publishing
+ *     responses:
+ *       201:
+ *         description: Schedule created
+ *       400:
+ *         description: Schedule already exists for this persona+account
+ */
 router.post('/', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   const data = ScheduleSchema.parse(req.body);
   
-  // Check if schedule already exists for this persona+account combo
   const existing = await prisma.schedule.findUnique({
     where: {
       personaId_accountId: {
@@ -80,7 +156,23 @@ router.post('/', async (req: Request, res: Response) => {
   res.status(201).json(schedule);
 });
 
-// Update schedule
+/**
+ * @openapi
+ * /api/schedules/{id}:
+ *   put:
+ *     summary: Update a schedule
+ *     tags: [Schedules]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Schedule updated
+ */
 router.put('/:id', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   const data = ScheduleSchema.partial().parse(req.body);
@@ -97,7 +189,23 @@ router.put('/:id', async (req: Request, res: Response) => {
   res.json(schedule);
 });
 
-// Delete schedule
+/**
+ * @openapi
+ * /api/schedules/{id}:
+ *   delete:
+ *     summary: Delete a schedule
+ *     tags: [Schedules]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       204:
+ *         description: Schedule deleted
+ */
 router.delete('/:id', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   
@@ -108,7 +216,23 @@ router.delete('/:id', async (req: Request, res: Response) => {
   res.status(204).send();
 });
 
-// Toggle active status
+/**
+ * @openapi
+ * /api/schedules/{id}/toggle:
+ *   patch:
+ *     summary: Toggle schedule active status
+ *     tags: [Schedules]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Schedule status toggled
+ */
 router.patch('/:id/toggle', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   
