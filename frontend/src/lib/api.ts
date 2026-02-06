@@ -87,6 +87,24 @@ export const api = {
   getAccounts: () => request<any[]>('/api/accounts'),
   disconnectAccount: (id: string) => request<void>(`/api/threads/disconnect/${id}`, { method: 'POST' }),
 
+  // Persona Analysis
+  analyzePersona: (personName: string) => request<{
+    name: string;
+    era: string;
+    occupation: string;
+    style: string;
+    tone: string;
+    topics: string[];
+    sampleQuotes: string[];
+    systemPrompt: string;
+    writingPatterns: string;
+    vocabulary: string;
+    keyThemes: string;
+  }>('/api/personas/analyze', {
+    method: 'POST',
+    body: JSON.stringify({ personName }),
+  }),
+
   // Trends
   getTrends: () => request<{ count: number; trends: any[] }>('/api/trends'),
   getTrendsBySource: (source: 'google' | 'hackernews' | 'reddit') => 

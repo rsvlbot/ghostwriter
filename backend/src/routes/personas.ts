@@ -2,18 +2,26 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { AppError } from '../middleware/errorHandler';
+import { analyzePersona } from '../services/ai';
 
 const router = Router();
 
 const PersonaSchema = z.object({
   name: z.string().min(1),
   handle: z.string().min(1),
-  era: z.string().optional(),
-  occupation: z.string().optional(),
+  era: z.string().optional().nullable(),
+  occupation: z.string().optional().nullable(),
   style: z.string().min(1),
+  tone: z.string().optional().nullable(),
+  topics: z.array(z.string()).default([]),
   sampleQuotes: z.array(z.string()).default([]),
-  systemPrompt: z.string().min(1),
+  systemPrompt: z.string().default(''),
+  writingPatterns: z.string().optional().nullable(),
+  vocabulary: z.string().optional().nullable(),
+  keyThemes: z.string().optional().nullable(),
+  basedOn: z.string().optional().nullable(),
   avatarUrl: z.string().url().optional().nullable(),
+  accountId: z.string().optional().nullable(),
   active: z.boolean().default(true)
 });
 
@@ -171,6 +179,42 @@ router.put('/:id', async (req: Request, res: Response) => {
   });
   
   res.json(persona);
+});
+
+/**
+ * @openapi
+ * /api/personas/analyze:
+ *   post:
+ *     summary: Analyze a famous person and generate persona profile
+ *     tags: [Personas]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [personName]
+ *             properties:
+ *               personName:
+ *                 type: string
+ *                 example: Steve Jobs
+ *     responses:
+ *       200:
+ *         description: Persona analysis result
+ */
+router.post('/analyze', async (req: Request, res: Response) => {
+  const { personName } = req.body;
+  
+  if (!personName || typeof personName !== 'string') {
+    throw new AppError('personName is required', 400);
+  }
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new AppError('AI not configured. Set ANTHROPIC_API_KEY.', 500);
+  }
+
+  const analysis = await analyzePersona(personName);
+  res.json(analysis);
 });
 
 /**

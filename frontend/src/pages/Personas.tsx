@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Sparkles, Wand2, Search, Ghost, Plus, X, Edit2, Trash2 } from 'lucide-react'
+import { Sparkles, Wand2, Search, Ghost, Plus, X, Edit2, Trash2, Brain, Loader2 } from 'lucide-react'
 import { api } from '../lib/api'
 import toast from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Skeleton, EmptyState, Badge, Select } from '../components/ui'
@@ -33,6 +33,12 @@ const emptyForm = {
   topics: '',
   tone: '',
   accountId: '',
+  basedOn: '',
+  systemPrompt: '',
+  sampleQuotes: '',
+  writingPatterns: '',
+  vocabulary: '',
+  keyThemes: '',
 }
 
 export default function Personas() {
@@ -47,6 +53,7 @@ export default function Personas() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -76,12 +83,18 @@ export default function Personas() {
     try {
       const data = {
         name: form.name,
-        handle: form.handle || form.name.toLowerCase().replace(/\s+/g, ''),
+        handle: form.handle || form.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
         occupation: form.occupation || null,
         style: form.style,
-        topics: form.topics ? form.topics.split(',').map(t => t.trim()) : [],
+        topics: form.topics ? form.topics.split(',').map((t: string) => t.trim()).filter(Boolean) : [],
         tone: form.tone || null,
         accountId: form.accountId || null,
+        basedOn: form.basedOn || null,
+        systemPrompt: form.systemPrompt || '',
+        sampleQuotes: form.sampleQuotes ? form.sampleQuotes.split('\n').filter(Boolean) : [],
+        writingPatterns: form.writingPatterns || null,
+        vocabulary: form.vocabulary || null,
+        keyThemes: form.keyThemes || null,
       }
       
       if (editingId) {
@@ -103,7 +116,7 @@ export default function Personas() {
     }
   }
 
-  const handleEdit = (persona: Persona) => {
+  const handleEdit = (persona: any) => {
     setForm({
       name: persona.name,
       handle: persona.handle,
@@ -112,6 +125,12 @@ export default function Personas() {
       topics: persona.topics?.join(', ') || '',
       tone: persona.tone || '',
       accountId: persona.accountId || '',
+      basedOn: persona.basedOn || '',
+      systemPrompt: persona.systemPrompt || '',
+      sampleQuotes: persona.sampleQuotes?.join('\n') || '',
+      writingPatterns: persona.writingPatterns || '',
+      vocabulary: persona.vocabulary || '',
+      keyThemes: persona.keyThemes || '',
     })
     setEditingId(persona.id)
     setShowForm(true)
@@ -132,6 +151,36 @@ export default function Personas() {
     setForm(emptyForm)
     setEditingId(null)
     setShowForm(true)
+  }
+
+  const handleAnalyze = async () => {
+    if (!form.basedOn.trim()) {
+      toast.error('Enter a famous person name first')
+      return
+    }
+    setAnalyzing(true)
+    try {
+      const analysis = await api.analyzePersona(form.basedOn.trim())
+      setForm({
+        ...form,
+        name: analysis.name,
+        handle: analysis.name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        occupation: analysis.occupation,
+        style: analysis.style,
+        tone: analysis.tone,
+        topics: analysis.topics.join(', '),
+        sampleQuotes: analysis.sampleQuotes.join('\n'),
+        systemPrompt: analysis.systemPrompt,
+        writingPatterns: analysis.writingPatterns,
+        vocabulary: analysis.vocabulary,
+        keyThemes: analysis.keyThemes,
+      })
+      toast.success(`Analyzed ${analysis.name}!`)
+    } catch (error) {
+      toast.error('Analysis failed. Check if AI is configured.')
+    } finally {
+      setAnalyzing(false)
+    }
   }
 
   const handleGenerate = async (persona: Persona) => {
@@ -191,7 +240,7 @@ export default function Personas() {
       {/* Create/Edit Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fade-in">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in">
             <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between">
               <CardTitle>{editingId ? 'Edit Persona' : 'Create Persona'}</CardTitle>
               <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="h-8 w-8 p-0">
@@ -199,11 +248,59 @@ export default function Personas() {
               </Button>
             </CardHeader>
             <CardContent className="p-4 sm:p-6 pt-2 space-y-4">
+              {/* AI Analysis Section */}
+              <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <Brain className="w-5 h-5 text-purple-400" />
+                  <span className="font-medium">AI-Powered Analysis</span>
+                </div>
+                <p className="text-sm text-[rgb(var(--muted-foreground))] mb-3">
+                  Enter a famous person's name and let AI analyze their writing style, quotes, and create a detailed persona profile.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Steve Jobs, Einstein, Hemingway..."
+                    value={form.basedOn}
+                    onChange={(e) => setForm({ ...form, basedOn: e.target.value })}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleAnalyze}
+                    disabled={analyzing || !form.basedOn.trim()}
+                    className="min-w-[120px]"
+                  >
+                    {analyzing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="w-4 h-4" />
+                        Analyze
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[rgb(var(--border))]" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-[rgb(var(--card))] px-2 text-[rgb(var(--muted-foreground))]">
+                    or fill manually
+                  </span>
+                </div>
+              </div>
+
+              {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Name *</label>
                   <Input
-                    placeholder="Tech Insider"
+                    placeholder="Marcus Aurelius"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                   />
@@ -211,7 +308,7 @@ export default function Personas() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Handle</label>
                   <Input
-                    placeholder="techinsider"
+                    placeholder="marcus_aurelius"
                     value={form.handle}
                     onChange={(e) => setForm({ ...form, handle: e.target.value })}
                   />
@@ -221,7 +318,7 @@ export default function Personas() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Occupation / Role</label>
                 <Input
-                  placeholder="AI Researcher, Startup Founder..."
+                  placeholder="Roman Emperor, Stoic Philosopher..."
                   value={form.occupation}
                   onChange={(e) => setForm({ ...form, occupation: e.target.value })}
                 />
@@ -230,41 +327,68 @@ export default function Personas() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Writing Style *</label>
                 <textarea
-                  className="w-full min-h-[100px] px-3 py-2 rounded-lg bg-[rgb(var(--muted))] border border-[rgb(var(--border))] text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))]"
-                  placeholder="Describe how this persona writes. E.g.: Witty and sarcastic, uses tech jargon, often includes hot takes..."
+                  className="w-full min-h-[80px] px-3 py-2 rounded-lg bg-[rgb(var(--muted))] border border-[rgb(var(--border))] text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))]"
+                  placeholder="Contemplative and reflective, uses metaphors from nature, focuses on virtue and self-improvement..."
                   value={form.style}
                   onChange={(e) => setForm({ ...form, style: e.target.value })}
                 />
               </div>
-              
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Topics</label>
+                  <Input
+                    placeholder="philosophy, leadership, ethics"
+                    value={form.topics}
+                    onChange={(e) => setForm({ ...form, topics: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Tone</label>
+                  <Select
+                    value={form.tone}
+                    onChange={(e) => setForm({ ...form, tone: e.target.value })}
+                  >
+                    <option value="">Select tone...</option>
+                    <option value="professional">Professional</option>
+                    <option value="casual">Casual</option>
+                    <option value="humorous">Humorous</option>
+                    <option value="sarcastic">Sarcastic</option>
+                    <option value="inspirational">Inspirational</option>
+                    <option value="controversial">Controversial</option>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Sample Quotes */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Topics</label>
-                <Input
-                  placeholder="AI, startups, coding, productivity (comma-separated)"
-                  value={form.topics}
-                  onChange={(e) => setForm({ ...form, topics: e.target.value })}
+                <label className="text-sm font-medium">Sample Quotes</label>
+                <textarea
+                  className="w-full min-h-[80px] px-3 py-2 rounded-lg bg-[rgb(var(--muted))] border border-[rgb(var(--border))] text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))]"
+                  placeholder="One quote per line. These help AI capture the voice..."
+                  value={form.sampleQuotes}
+                  onChange={(e) => setForm({ ...form, sampleQuotes: e.target.value })}
                 />
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Tone</label>
-                <Select
-                  value={form.tone}
-                  onChange={(e) => setForm({ ...form, tone: e.target.value })}
-                >
-                  <option value="">Select tone...</option>
-                  <option value="professional">Professional</option>
-                  <option value="casual">Casual</option>
-                  <option value="humorous">Humorous</option>
-                  <option value="sarcastic">Sarcastic</option>
-                  <option value="inspirational">Inspirational</option>
-                  <option value="controversial">Controversial</option>
-                </Select>
-              </div>
+
+              {/* System Prompt - Collapsible */}
+              {form.systemPrompt && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">AI System Prompt</label>
+                  <textarea
+                    className="w-full min-h-[120px] px-3 py-2 rounded-lg bg-[rgb(var(--muted))] border border-[rgb(var(--border))] text-xs font-mono resize-none focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))]"
+                    value={form.systemPrompt}
+                    onChange={(e) => setForm({ ...form, systemPrompt: e.target.value })}
+                  />
+                  <p className="text-xs text-[rgb(var(--muted-foreground))]">
+                    This prompt guides the AI to write like this person. Auto-generated by analysis.
+                  </p>
+                </div>
+              )}
               
               {accounts.length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Threads Account</label>
+                  <label className="text-sm font-medium">Default Threads Account</label>
                   <Select
                     value={form.accountId}
                     onChange={(e) => setForm({ ...form, accountId: e.target.value })}
@@ -281,7 +405,7 @@ export default function Personas() {
                 <Button variant="secondary" onClick={() => setShowForm(false)} className="flex-1">
                   Cancel
                 </Button>
-                <Button onClick={handleSave} disabled={saving} className="flex-1">
+                <Button onClick={handleSave} disabled={saving || !form.name || !form.style} className="flex-1">
                   {saving ? 'Saving...' : (editingId ? 'Update' : 'Create')}
                 </Button>
               </div>

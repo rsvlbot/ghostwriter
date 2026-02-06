@@ -8,21 +8,29 @@ datasource db {
 }
 
 model Persona {
-  id           String     @id @default(uuid())
-  name         String
-  handle       String     @unique
-  era          String?
-  occupation   String?
-  style        String     @db.Text
-  sampleQuotes String[]   @default([])
-  systemPrompt String     @db.Text
-  avatarUrl    String?
-  active       Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id              String     @id @default(uuid())
+  name            String
+  handle          String     @unique
+  era             String?
+  occupation      String?
+  style           String     @db.Text
+  tone            String?
+  topics          String[]   @default([])
+  sampleQuotes    String[]   @default([])
+  systemPrompt    String     @db.Text @default("")
+  writingPatterns String?    @db.Text
+  vocabulary      String?    @db.Text
+  keyThemes       String?    @db.Text
+  basedOn         String?    // Famous person this persona is based on
+  avatarUrl       String?
+  accountId       String?    // Default account to post from
+  active          Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   posts     Post[]
   schedules Schedule[]
+  account   Account?   @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@map("personas")
 }
@@ -40,6 +48,7 @@ model Account {
 
   posts     Post[]
   schedules Schedule[]
+  personas  Persona[]
 
   @@map("accounts")
 }
