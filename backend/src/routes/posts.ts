@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient, PostStatus } from '@prisma/client';
 import { z } from 'zod';
 import { AppError } from '../middleware/errorHandler';
-import { publishToThreads } from '../services/threads';
+import { publishToThreads, refreshAccessToken } from '../services/threads';
 
 const router = Router();
 
@@ -342,9 +342,29 @@ router.post('/:id/publish', async (req: Request, res: Response) => {
     throw new AppError('No Threads account configured for this post', 400);
   }
   
+  // Auto-refresh token if expired or expiring within 24h
+  let currentToken = post.account.accessToken;
+  const tokenExpiry = post.account.tokenExpiresAt;
+  const oneDayFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  
+  if (tokenExpiry && tokenExpiry < oneDayFromNow) {
+    try {
+      const refreshed = await refreshAccessToken(currentToken);
+      currentToken = refreshed.accessToken;
+      const newExpiry = new Date();
+      newExpiry.setSeconds(newExpiry.getSeconds() + refreshed.expiresIn);
+      await prisma.account.update({
+        where: { id: post.account.id },
+        data: { accessToken: currentToken, tokenExpiresAt: newExpiry }
+      });
+    } catch (e) {
+      throw new AppError('Token expired and refresh failed. Please reconnect Threads account.', 401);
+    }
+  }
+  
   const result = await publishToThreads(
     {
-      accessToken: post.account.accessToken,
+      accessToken: currentToken,
       userId: post.account.threadsUserId
     },
     post.content

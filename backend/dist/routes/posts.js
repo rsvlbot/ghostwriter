@@ -314,8 +314,27 @@ router.post('/:id/publish', async (req, res) => {
     if (!post.account?.accessToken || !post.account?.threadsUserId) {
         throw new errorHandler_1.AppError('No Threads account configured for this post', 400);
     }
+    // Auto-refresh token if expired or expiring within 24h
+    let currentToken = post.account.accessToken;
+    const tokenExpiry = post.account.tokenExpiresAt;
+    const oneDayFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    if (tokenExpiry && tokenExpiry < oneDayFromNow) {
+        try {
+            const refreshed = await (0, threads_1.refreshAccessToken)(currentToken);
+            currentToken = refreshed.accessToken;
+            const newExpiry = new Date();
+            newExpiry.setSeconds(newExpiry.getSeconds() + refreshed.expiresIn);
+            await prisma.account.update({
+                where: { id: post.account.id },
+                data: { accessToken: currentToken, tokenExpiresAt: newExpiry }
+            });
+        }
+        catch (e) {
+            throw new errorHandler_1.AppError('Token expired and refresh failed. Please reconnect Threads account.', 401);
+        }
+    }
     const result = await (0, threads_1.publishToThreads)({
-        accessToken: post.account.accessToken,
+        accessToken: currentToken,
         userId: post.account.threadsUserId
     }, post.content);
     if (result.success) {

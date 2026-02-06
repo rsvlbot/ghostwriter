@@ -27,11 +27,14 @@ export declare function getThreadsProfile(accessToken: string): Promise<{
     threadsProfilePictureUrl?: string;
 }>;
 /**
- * Exchange authorization code for access token
+ * Exchange authorization code for a long-lived access token
+ * Step 1: code → short-lived token
+ * Step 2: short-lived → long-lived token (60 days)
  */
 export declare function exchangeCodeForToken(code: string, redirectUri: string): Promise<{
     accessToken: string;
     userId: string;
+    expiresIn: number;
 }>;
 /**
  * Refresh a long-lived access token

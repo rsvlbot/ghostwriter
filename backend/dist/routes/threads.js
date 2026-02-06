@@ -21,13 +21,13 @@ router.post('/auth/callback', async (req, res) => {
     if (!code) {
         throw new errorHandler_1.AppError('Authorization code is required', 400);
     }
-    // Exchange code for token
-    const { accessToken, userId } = await (0, threads_1.exchangeCodeForToken)(code, redirect_uri || process.env.THREADS_REDIRECT_URI || '');
+    // Exchange code for long-lived token
+    const { accessToken, userId, expiresIn } = await (0, threads_1.exchangeCodeForToken)(code, redirect_uri || process.env.THREADS_REDIRECT_URI || '');
     // Get user profile
     const profile = await (0, threads_1.getThreadsProfile)(accessToken);
-    // Calculate token expiration (60 days for long-lived token)
+    // Calculate token expiration from actual expiresIn
     const tokenExpiresAt = new Date();
-    tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 60);
+    tokenExpiresAt.setSeconds(tokenExpiresAt.getSeconds() + expiresIn);
     // Convert userId to string (API returns number, DB expects string)
     const userIdStr = String(userId);
     // Create or update account

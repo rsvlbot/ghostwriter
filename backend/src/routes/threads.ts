@@ -32,8 +32,8 @@ router.post('/auth/callback', async (req: Request, res: Response) => {
     throw new AppError('Authorization code is required', 400);
   }
 
-  // Exchange code for token
-  const { accessToken, userId } = await exchangeCodeForToken(
+  // Exchange code for long-lived token
+  const { accessToken, userId, expiresIn } = await exchangeCodeForToken(
     code,
     redirect_uri || process.env.THREADS_REDIRECT_URI || ''
   );
@@ -41,9 +41,9 @@ router.post('/auth/callback', async (req: Request, res: Response) => {
   // Get user profile
   const profile = await getThreadsProfile(accessToken);
 
-  // Calculate token expiration (60 days for long-lived token)
+  // Calculate token expiration from actual expiresIn
   const tokenExpiresAt = new Date();
-  tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 60);
+  tokenExpiresAt.setSeconds(tokenExpiresAt.getSeconds() + expiresIn);
 
   // Convert userId to string (API returns number, DB expects string)
   const userIdStr = String(userId);

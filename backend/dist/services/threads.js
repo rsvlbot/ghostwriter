@@ -89,9 +89,9 @@ async function getThreadsProfile(accessToken) {
     return response.json();
 }
 /**
- * Exchange authorization code for access token
+ * Exchange authorization code for short-lived access token
  */
-async function exchangeCodeForToken(code, redirectUri) {
+async function exchangeCodeForShortLivedToken(code, redirectUri) {
     const url = `${THREADS_API_URL}/oauth/access_token`;
     const params = new URLSearchParams({
         client_id: process.env.THREADS_APP_ID || '',
@@ -112,6 +112,43 @@ async function exchangeCodeForToken(code, redirectUri) {
     return {
         accessToken: data.access_token,
         userId: data.user_id
+    };
+}
+/**
+ * Exchange short-lived token for long-lived token (60 days)
+ */
+async function exchangeForLongLivedToken(shortLivedToken) {
+    const url = `${THREADS_API_URL}/access_token`;
+    const params = new URLSearchParams({
+        grant_type: 'th_exchange_token',
+        client_secret: process.env.THREADS_APP_SECRET || '',
+        access_token: shortLivedToken
+    });
+    const response = await fetch(`${url}?${params}`);
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'Failed to exchange for long-lived token');
+    }
+    const data = await response.json();
+    return {
+        accessToken: data.access_token,
+        expiresIn: data.expires_in
+    };
+}
+/**
+ * Exchange authorization code for a long-lived access token
+ * Step 1: code → short-lived token
+ * Step 2: short-lived → long-lived token (60 days)
+ */
+async function exchangeCodeForToken(code, redirectUri) {
+    // Step 1: Get short-lived token
+    const { accessToken: shortToken, userId } = await exchangeCodeForShortLivedToken(code, redirectUri);
+    // Step 2: Exchange for long-lived token
+    const { accessToken, expiresIn } = await exchangeForLongLivedToken(shortToken);
+    return {
+        accessToken,
+        userId,
+        expiresIn
     };
 }
 /**
