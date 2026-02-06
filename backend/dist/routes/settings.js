@@ -58,9 +58,15 @@ router.get('/', async (req, res) => {
     }
     // Add available models list
     const availableModels = [
-        { id: 'claude-opus-4-6', name: 'Claude Opus 4.6 (Latest)', provider: 'Anthropic' },
-        { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', provider: 'Anthropic' },
-        { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 (Fast)', provider: 'Anthropic' },
+        // Opus — best quality
+        { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', provider: 'Anthropic', tier: 'opus' },
+        { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', provider: 'Anthropic', tier: 'opus' },
+        // Sonnet — balanced
+        { id: 'claude-sonnet-4-5-20250514', name: 'Claude Sonnet 4.5', provider: 'Anthropic', tier: 'sonnet' },
+        { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'Anthropic', tier: 'sonnet' },
+        { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', tier: 'sonnet' },
+        // Haiku — fast & cheap
+        { id: 'claude-haiku-3-5-20241022', name: 'Claude 3.5 Haiku', provider: 'Anthropic', tier: 'haiku' },
     ];
     res.json({
         ...settings,
