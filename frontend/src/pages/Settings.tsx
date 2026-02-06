@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
-import { ExternalLink, CheckCircle, XCircle, Zap, Users, Trash2, Brain, Loader2 } from 'lucide-react'
+import { ExternalLink, CheckCircle, XCircle, Zap, Users, Trash2, Brain, Loader2, Save } from 'lucide-react'
 import { api } from '../lib/api'
 import toast from 'react-hot-toast'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Skeleton, Badge } from '../components/ui'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Skeleton, Badge, Select } from '../components/ui'
 import { cn } from '../lib/utils'
 
 export default function Settings() {
+  const [settings, setSettings] = useState<any>(null)
   const [systemInfo, setSystemInfo] = useState<any>(null)
   const [threadsStatus, setThreadsStatus] = useState<any>(null)
   const [accounts, setAccounts] = useState<any[]>([])
   const [aiStatus, setAiStatus] = useState<{ connected: boolean; model?: string; error?: string } | null>(null)
   const [testingAI, setTestingAI] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -19,11 +21,13 @@ export default function Settings() {
 
   const loadData = async () => {
     try {
-      const [systemData, threadsData, accountsData] = await Promise.all([
+      const [settingsData, systemData, threadsData, accountsData] = await Promise.all([
+        api.getSettings(),
         api.getSystemInfo(),
         api.getThreadsStatus(),
         api.getAccounts(),
       ])
+      setSettings(settingsData)
       setSystemInfo(systemData)
       setThreadsStatus(threadsData)
       setAccounts(accountsData)
@@ -31,6 +35,18 @@ export default function Settings() {
       toast.error('Failed to load settings')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSaveModel = async () => {
+    setSaving(true)
+    try {
+      await api.updateSettings({ aiModel: settings.aiModel })
+      toast.success('Model saved')
+    } catch (error) {
+      toast.error('Failed to save')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -136,7 +152,31 @@ export default function Settings() {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {/* Model Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Model</label>
+                <div className="flex gap-2">
+                  <Select
+                    value={settings?.aiModel || ''}
+                    onChange={(e) => setSettings({ ...settings, aiModel: e.target.value })}
+                    className="flex-1 h-10"
+                  >
+                    <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (Fast)</option>
+                    <option value="claude-opus-4-20250514">Claude Opus 4 (Powerful)</option>
+                    <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                  </Select>
+                  <Button
+                    onClick={handleSaveModel}
+                    disabled={saving}
+                    className="h-10"
+                  >
+                    <Save className="w-4 h-4" />
+                    {saving ? '...' : 'Save'}
+                  </Button>
+                </div>
+              </div>
+
               {aiStatus && (
                 <div className={cn(
                   "p-3 rounded-lg border",
