@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Save, ExternalLink, CheckCircle, XCircle, Cpu, Info, Zap, Users, Trash2, Brain, Loader2 } from 'lucide-react'
+import { ExternalLink, CheckCircle, XCircle, Zap, Users, Trash2, Brain, Loader2 } from 'lucide-react'
 import { api } from '../lib/api'
 import toast from 'react-hot-toast'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Select, Slider, Skeleton, Badge } from '../components/ui'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Skeleton, Badge } from '../components/ui'
 import { cn } from '../lib/utils'
 
 export default function Settings() {
-  const [settings, setSettings] = useState<any>(null)
   const [systemInfo, setSystemInfo] = useState<any>(null)
   const [threadsStatus, setThreadsStatus] = useState<any>(null)
   const [accounts, setAccounts] = useState<any[]>([])
   const [aiStatus, setAiStatus] = useState<{ connected: boolean; model?: string; error?: string } | null>(null)
   const [testingAI, setTestingAI] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -21,13 +19,11 @@ export default function Settings() {
 
   const loadData = async () => {
     try {
-      const [settingsData, systemData, threadsData, accountsData] = await Promise.all([
-        api.getSettings(),
+      const [systemData, threadsData, accountsData] = await Promise.all([
         api.getSystemInfo(),
         api.getThreadsStatus(),
         api.getAccounts(),
       ])
-      setSettings(settingsData)
       setSystemInfo(systemData)
       setThreadsStatus(threadsData)
       setAccounts(accountsData)
@@ -67,21 +63,6 @@ export default function Settings() {
     }
   }
 
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      await api.updateSettings({
-        aiModel: settings.aiModel,
-        aiTemp: settings.aiTemp,
-      })
-      toast.success('Settings saved')
-    } catch (error) {
-      toast.error('Failed to save')
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const handleConnectThreads = async () => {
     try {
       const redirectUri = `${window.location.origin}/auth/callback`
@@ -115,64 +96,6 @@ export default function Settings() {
           Configure your Ghostwriter instance
         </p>
       </div>
-
-      {/* AI Settings */}
-      <Card>
-        <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-[rgb(var(--primary))] shadow-lg shadow-[rgb(var(--primary))/0.2]">
-              <Cpu className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            </div>
-            <div>
-              <CardTitle className="text-base sm:text-lg">AI Configuration</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">Model and generation settings</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-2 sm:pt-0 space-y-5 sm:space-y-6">
-          {/* Model Select */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Model</label>
-            <Select
-              value={settings?.aiModel || ''}
-              onChange={(e) => setSettings({ ...settings, aiModel: e.target.value })}
-              className="h-11 sm:h-10"
-            >
-              {settings?.availableModels?.map((model: any) => (
-                <option key={model.id} value={model.id}>
-                  {model.name} ({model.provider})
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          {/* Temperature Slider */}
-          <div className="space-y-3">
-            <Slider
-              label="Temperature"
-              showValue
-              min={0}
-              max={1.5}
-              step={0.05}
-              value={settings?.aiTemp || 0.8}
-              onChange={(e) => setSettings({ ...settings, aiTemp: parseFloat(e.target.value) })}
-            />
-            <div className="flex items-center gap-2 text-xs text-[rgb(var(--muted-foreground))]">
-              <Info className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>Lower = more focused, Higher = more creative</span>
-            </div>
-          </div>
-
-          <Button 
-            onClick={handleSave} 
-            disabled={saving} 
-            className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? 'Saving...' : 'Save Settings'}
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* AI Connection Status */}
       <Card>
