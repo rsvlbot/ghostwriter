@@ -240,7 +240,7 @@ export default function Personas() {
       {/* Create/Edit Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in">
+          <Card className="w-full max-w-2xl animate-fade-in">
             <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between">
               <CardTitle>{editingId ? 'Edit Persona' : 'Create Persona'}</CardTitle>
               <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="h-8 w-8 p-0">
