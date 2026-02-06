@@ -186,6 +186,10 @@ router.put('/:id', async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
     const prisma = req.app.locals.prisma;
+    const post = await prisma.post.findUnique({ where: { id: req.params.id } });
+    if (!post) {
+        throw new errorHandler_1.AppError('Post not found', 404);
+    }
     await prisma.post.delete({
         where: { id: req.params.id }
     });

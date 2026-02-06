@@ -198,6 +198,11 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
   
+  const post = await prisma.post.findUnique({ where: { id: req.params.id } });
+  if (!post) {
+    throw new AppError('Post not found', 404);
+  }
+  
   await prisma.post.delete({
     where: { id: req.params.id }
   });
