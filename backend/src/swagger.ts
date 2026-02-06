@@ -27,7 +27,9 @@ Currently no authentication required (add API key middleware for production).
     },
     servers: [
       {
-        url: process.env.API_URL || 'http://localhost:3000',
+        url: process.env.RAILWAY_PUBLIC_DOMAIN 
+          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+          : process.env.API_URL || 'http://localhost:3000',
         description: 'API Server',
       },
     ],

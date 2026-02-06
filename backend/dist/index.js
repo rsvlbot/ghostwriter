@@ -33,14 +33,28 @@ app.use((0, cors_1.default)({
 app.use(express_1.default.json());
 // Make prisma available to routes
 app.locals.prisma = prisma;
-// Swagger UI
-app.use('/docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swagger_1.swaggerSpec, {
-    customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'Ghostwriter API Docs',
-}));
-// Swagger JSON
+// Swagger UI - dynamic host
+app.use('/docs', swagger_ui_express_1.default.serve, (req, res, next) => {
+    const host = req.get('host');
+    const protocol = req.protocol === 'http' && host?.includes('railway') ? 'https' : req.protocol;
+    const dynamicSpec = {
+        ...swagger_1.swaggerSpec,
+        servers: [{ url: `${protocol}://${host}`, description: 'API Server' }]
+    };
+    swagger_ui_express_1.default.setup(dynamicSpec, {
+        customCss: '.swagger-ui .topbar { display: none }',
+        customSiteTitle: 'Ghostwriter API Docs',
+    })(req, res, next);
+});
+// Swagger JSON - dynamic host
 app.get('/docs.json', (req, res) => {
-    res.json(swagger_1.swaggerSpec);
+    const host = req.get('host');
+    const protocol = req.protocol === 'http' && host?.includes('railway') ? 'https' : req.protocol;
+    const dynamicSpec = {
+        ...swagger_1.swaggerSpec,
+        servers: [{ url: `${protocol}://${host}`, description: 'API Server' }]
+    };
+    res.json(dynamicSpec);
 });
 /**
  * @openapi
