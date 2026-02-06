@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const zod_1 = require("zod");
@@ -71,9 +104,40 @@ router.get('/system', async (req, res) => {
             configured: !!(process.env.THREADS_APP_ID && process.env.THREADS_APP_SECRET)
         },
         ai: {
-            configured: !!process.env.ANTHROPIC_API_KEY
+            configured: !!process.env.ANTHROPIC_API_KEY,
+            provider: 'Anthropic Claude'
         }
     });
+});
+// Test AI connection
+router.get('/ai/test', async (req, res) => {
+    if (!process.env.ANTHROPIC_API_KEY) {
+        res.json({
+            connected: false,
+            error: 'ANTHROPIC_API_KEY not configured'
+        });
+        return;
+    }
+    try {
+        const Anthropic = (await Promise.resolve().then(() => __importStar(require('@anthropic-ai/sdk')))).default;
+        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        const response = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 10,
+            messages: [{ role: 'user', content: 'Hi' }]
+        });
+        res.json({
+            connected: true,
+            model: 'claude-sonnet-4-20250514',
+            provider: 'Anthropic'
+        });
+    }
+    catch (error) {
+        res.json({
+            connected: false,
+            error: error.message || 'Connection failed'
+        });
+    }
 });
 exports.default = router;
 //# sourceMappingURL=settings.js.map

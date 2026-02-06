@@ -83,9 +83,43 @@ router.get('/system', async (req: Request, res: Response) => {
       configured: !!(process.env.THREADS_APP_ID && process.env.THREADS_APP_SECRET)
     },
     ai: {
-      configured: !!process.env.ANTHROPIC_API_KEY
+      configured: !!process.env.ANTHROPIC_API_KEY,
+      provider: 'Anthropic Claude'
     }
   });
+});
+
+// Test AI connection
+router.get('/ai/test', async (req: Request, res: Response) => {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    res.json({ 
+      connected: false, 
+      error: 'ANTHROPIC_API_KEY not configured' 
+    });
+    return;
+  }
+
+  try {
+    const Anthropic = (await import('@anthropic-ai/sdk')).default;
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 10,
+      messages: [{ role: 'user', content: 'Hi' }]
+    });
+
+    res.json({ 
+      connected: true, 
+      model: 'claude-sonnet-4-20250514',
+      provider: 'Anthropic'
+    });
+  } catch (error: any) {
+    res.json({ 
+      connected: false, 
+      error: error.message || 'Connection failed'
+    });
+  }
 });
 
 export default router;

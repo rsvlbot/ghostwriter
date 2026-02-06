@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Save, ExternalLink, CheckCircle, XCircle, Cpu, Info, Zap, Users, Trash2 } from 'lucide-react'
+import { Save, ExternalLink, CheckCircle, XCircle, Cpu, Info, Zap, Users, Trash2, Brain, Loader2 } from 'lucide-react'
 import { api } from '../lib/api'
 import toast from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Select, Slider, Skeleton, Badge } from '../components/ui'
@@ -10,6 +10,8 @@ export default function Settings() {
   const [systemInfo, setSystemInfo] = useState<any>(null)
   const [threadsStatus, setThreadsStatus] = useState<any>(null)
   const [accounts, setAccounts] = useState<any[]>([])
+  const [aiStatus, setAiStatus] = useState<{ connected: boolean; model?: string; error?: string } | null>(null)
+  const [testingAI, setTestingAI] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -44,6 +46,24 @@ export default function Settings() {
       loadData()
     } catch (error) {
       toast.error('Failed to disconnect')
+    }
+  }
+
+  const handleTestAI = async () => {
+    setTestingAI(true)
+    try {
+      const result = await api.testAI()
+      setAiStatus(result)
+      if (result.connected) {
+        toast.success('AI connected!')
+      } else {
+        toast.error(result.error || 'AI not connected')
+      }
+    } catch (error) {
+      setAiStatus({ connected: false, error: 'Test failed' })
+      toast.error('Failed to test AI')
+    } finally {
+      setTestingAI(false)
     }
   }
 
@@ -151,6 +171,89 @@ export default function Settings() {
             <Save className="w-4 h-4" />
             {saving ? 'Saving...' : 'Save Settings'}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* AI Connection Status */}
+      <Card>
+        <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-3 flex-1">
+              <div className={cn(
+                "p-2 sm:p-2.5 rounded-lg sm:rounded-xl shadow-lg",
+                systemInfo?.ai?.configured 
+                  ? "bg-gradient-to-br from-emerald-500 to-teal-500" 
+                  : "bg-neutral-800 border border-neutral-700"
+              )}>
+                <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-base sm:text-lg">Claude AI</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Anthropic API connection</CardDescription>
+              </div>
+            </div>
+            {systemInfo?.ai?.configured ? (
+              <Badge variant="success" className="flex items-center gap-1 self-start sm:self-auto">
+                <CheckCircle className="w-3.5 h-3.5" />
+                Key Added
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="flex items-center gap-1 self-start sm:self-auto">
+                <XCircle className="w-3.5 h-3.5" />
+                Not Configured
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 pt-2 sm:pt-0 space-y-4">
+          {!systemInfo?.ai?.configured ? (
+            <div className="p-3 sm:p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <p className="text-sm text-amber-400">
+                Set <code className="px-1 py-0.5 rounded bg-[rgb(var(--muted))] text-xs">ANTHROPIC_API_KEY</code> in your environment to enable AI features.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {aiStatus && (
+                <div className={cn(
+                  "p-3 rounded-lg border",
+                  aiStatus.connected 
+                    ? "bg-emerald-500/10 border-emerald-500/20" 
+                    : "bg-red-500/10 border-red-500/20"
+                )}>
+                  {aiStatus.connected ? (
+                    <div className="flex items-center gap-2 text-emerald-400">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="text-sm">Connected to {aiStatus.model}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-red-400">
+                      <XCircle className="w-4 h-4" />
+                      <span className="text-sm">{aiStatus.error}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              <Button
+                variant="secondary"
+                onClick={handleTestAI}
+                disabled={testingAI}
+                className="w-full sm:w-auto h-11 sm:h-10"
+              >
+                {testingAI ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Testing...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-4 h-4" />
+                    Test Connection
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

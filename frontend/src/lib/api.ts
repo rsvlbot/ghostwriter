@@ -78,6 +78,7 @@ export const api = {
     body: JSON.stringify(data),
   }),
   getSystemInfo: () => request<any>('/api/settings/system'),
+  testAI: () => request<{ connected: boolean; model?: string; provider?: string; error?: string }>('/api/settings/ai/test'),
 
   // Threads
   getThreadsStatus: () => request<{ configured: boolean; appId: string | null }>('/api/threads/status'),
