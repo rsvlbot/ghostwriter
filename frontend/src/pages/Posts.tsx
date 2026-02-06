@@ -39,6 +39,8 @@ export default function Posts() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<Post | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     loadPosts()
@@ -86,14 +88,18 @@ export default function Posts() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this post?')) return
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
     try {
-      await api.deletePost(id)
+      await api.deletePost(deleteTarget.id)
       toast.success('Post deleted')
+      setDeleteTarget(null)
       loadPosts()
     } catch (error) {
       toast.error('Failed to delete')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -234,7 +240,7 @@ export default function Posts() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => handleDelete(post.id)}
+                          onClick={() => setDeleteTarget(post)}
                           className="h-10 w-10 sm:h-9 sm:w-9 text-[rgb(var(--muted-foreground))] hover:text-red-400 hover:bg-red-500/10 touch-manipulation ml-auto sm:ml-0"
                           title="Delete"
                         >
@@ -249,6 +255,45 @@ export default function Posts() {
           )}
         </TabsContent>
       </Tabs>
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !deleting && setDeleteTarget(null)}>
+          <Card className="w-full max-w-md animate-fade-in" onClick={(e) => e.stopPropagation()}>
+            <CardContent className="p-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-7 h-7 text-red-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-[rgb(var(--foreground))] mb-2">
+                Delete Post?
+              </h3>
+              <p className="text-sm text-[rgb(var(--muted-foreground))] mb-1">
+                This action cannot be undone.
+              </p>
+              <p className="text-xs text-[rgb(var(--muted-foreground))] mb-6 line-clamp-2 italic">
+                "{deleteTarget.content.slice(0, 100)}{deleteTarget.content.length > 100 ? '...' : ''}"
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
