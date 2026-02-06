@@ -162,9 +162,10 @@ export default function Settings() {
                     onChange={(e) => setSettings({ ...settings, aiModel: e.target.value })}
                     className="flex-1 h-10"
                   >
-                    <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (Fast)</option>
-                    <option value="claude-opus-4-20250514">Claude Opus 4 (Powerful)</option>
-                    <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                    <option value="claude-opus-4-5-20250514">Claude Opus 4.5 (Best)</option>
+                    <option value="claude-sonnet-4-5-20250514">Claude Sonnet 4.5 (Fast)</option>
+                    <option value="claude-opus-4-20250514">Claude Opus 4</option>
+                    <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
                   </Select>
                   <Button
                     onClick={handleSaveModel}
