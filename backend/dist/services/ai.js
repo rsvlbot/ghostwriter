@@ -11,7 +11,7 @@ const anthropic = new sdk_1.default({
     apiKey: process.env.ANTHROPIC_API_KEY
 });
 async function generatePost(options) {
-    const { persona, topic, topicContext, model = 'claude-sonnet-4-20250514', temperature = 0.8 } = options;
+    const { persona, topic, topicContext, model = 'claude-sonnet-4-5-20250514', temperature = 0.8 } = options;
     const systemPrompt = `You are ${persona.name}${persona.era ? ` (${persona.era})` : ''}${persona.occupation ? `, ${persona.occupation}` : ''}.
 
 Writing Style: ${persona.style}

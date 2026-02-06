@@ -111,6 +111,7 @@ router.get('/system', async (req, res) => {
 });
 // Test AI connection
 router.get('/ai/test', async (req, res) => {
+    const prisma = req.app.locals.prisma;
     if (!process.env.ANTHROPIC_API_KEY) {
         res.json({
             connected: false,
@@ -119,16 +120,21 @@ router.get('/ai/test', async (req, res) => {
         return;
     }
     try {
+        // Get current model from settings
+        const settings = await prisma.settings.findUnique({
+            where: { id: 'default' }
+        });
+        const model = settings?.aiModel || 'claude-sonnet-4-5-20250514';
         const Anthropic = (await Promise.resolve().then(() => __importStar(require('@anthropic-ai/sdk')))).default;
         const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
         const response = await client.messages.create({
-            model: 'claude-sonnet-4-20250514',
+            model,
             max_tokens: 10,
             messages: [{ role: 'user', content: 'Hi' }]
         });
         res.json({
             connected: true,
-            model: 'claude-sonnet-4-20250514',
+            model,
             provider: 'Anthropic'
         });
     }
