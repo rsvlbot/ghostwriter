@@ -99,6 +99,20 @@ router.post('/', async (req: Request, res: Response) => {
     throw new AppError('Persona not found', 404);
   }
 
+  // Auto-assign account: use provided accountId, or persona's default, or first available
+  let finalAccountId = accountId;
+  if (!finalAccountId && persona.accountId) {
+    finalAccountId = persona.accountId;
+  }
+  if (!finalAccountId) {
+    const firstAccount = await prisma.account.findFirst({
+      where: { threadsUserId: { not: null } }
+    });
+    if (firstAccount) {
+      finalAccountId = firstAccount.id;
+    }
+  }
+
   const settings = await prisma.settings.findUnique({
     where: { id: 'default' }
   });
@@ -129,7 +143,7 @@ router.post('/', async (req: Request, res: Response) => {
       const post = await prisma.post.create({
         data: {
           personaId,
-          accountId,
+          accountId: finalAccountId,
           content,
           topic,
           status: 'DRAFT'
@@ -157,7 +171,7 @@ router.post('/', async (req: Request, res: Response) => {
           prisma.post.create({
             data: {
               personaId,
-              accountId,
+              accountId: finalAccountId,
               content,
               topic,
               status: 'DRAFT'
