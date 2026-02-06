@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Sparkles, Wand2, Search, Ghost } from 'lucide-react'
+import { Sparkles, Wand2, Search, Ghost, Plus, X, Edit2, Trash2 } from 'lucide-react'
 import { api } from '../lib/api'
 import toast from 'react-hot-toast'
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Skeleton, EmptyState, Badge } from '../components/ui'
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Skeleton, EmptyState, Badge, Select } from '../components/ui'
 import { Avatar, AvatarFallback } from '../components/ui/avatar'
 import { cn } from '../lib/utils'
 
@@ -13,30 +13,125 @@ interface Persona {
   era?: string
   occupation?: string
   style: string
+  topics?: string[]
+  tone?: string
+  accountId?: string
   active: boolean
+}
+
+interface Account {
+  id: string
+  name: string
+  threadsUserId: string
+}
+
+const emptyForm = {
+  name: '',
+  handle: '',
+  occupation: '',
+  style: '',
+  topics: '',
+  tone: '',
+  accountId: '',
 }
 
 export default function Personas() {
   const [personas, setPersonas] = useState<Persona[]>([])
+  const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
   const [testTopic, setTestTopic] = useState('')
   const [testResult, setTestResult] = useState('')
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null)
   const [generating, setGenerating] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState(emptyForm)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    loadPersonas()
+    loadData()
   }, [])
 
-  const loadPersonas = async () => {
+  const loadData = async () => {
     try {
-      const data = await api.getPersonas()
-      setPersonas(data)
+      const [personasData, accountsData] = await Promise.all([
+        api.getPersonas(),
+        api.getAccounts(),
+      ])
+      setPersonas(personasData)
+      setAccounts(accountsData.filter((a: Account) => a.threadsUserId))
     } catch (error) {
-      toast.error('Failed to load personas')
+      toast.error('Failed to load data')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSave = async () => {
+    if (!form.name.trim() || !form.style.trim()) {
+      toast.error('Name and style are required')
+      return
+    }
+    setSaving(true)
+    try {
+      const data = {
+        name: form.name,
+        handle: form.handle || form.name.toLowerCase().replace(/\s+/g, ''),
+        occupation: form.occupation || null,
+        style: form.style,
+        topics: form.topics ? form.topics.split(',').map(t => t.trim()) : [],
+        tone: form.tone || null,
+        accountId: form.accountId || null,
+      }
+      
+      if (editingId) {
+        await api.updatePersona(editingId, data)
+        toast.success('Persona updated')
+      } else {
+        await api.createPersona(data)
+        toast.success('Persona created')
+      }
+      
+      setShowForm(false)
+      setEditingId(null)
+      setForm(emptyForm)
+      loadData()
+    } catch (error) {
+      toast.error('Failed to save persona')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleEdit = (persona: Persona) => {
+    setForm({
+      name: persona.name,
+      handle: persona.handle,
+      occupation: persona.occupation || '',
+      style: persona.style,
+      topics: persona.topics?.join(', ') || '',
+      tone: persona.tone || '',
+      accountId: persona.accountId || '',
+    })
+    setEditingId(persona.id)
+    setShowForm(true)
+  }
+
+  const handleDelete = async (persona: Persona) => {
+    if (!confirm(`Delete "${persona.name}"?`)) return
+    try {
+      await api.deletePersona(persona.id)
+      toast.success('Persona deleted')
+      loadData()
+    } catch (error) {
+      toast.error('Failed to delete')
+    }
+  }
+
+  const openCreateForm = () => {
+    setForm(emptyForm)
+    setEditingId(null)
+    setShowForm(true)
   }
 
   const handleGenerate = async (persona: Persona) => {
@@ -80,17 +175,120 @@ export default function Personas() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Personas</h1>
           <p className="text-[rgb(var(--muted-foreground))] mt-1 text-sm sm:text-base">
-            Historical figures that post on your behalf
+            AI profiles that generate content in unique styles
           </p>
         </div>
-        <Badge variant="info" className="px-3 py-1 self-start sm:self-auto">
-          {personas.length} active
-        </Badge>
+        <Button onClick={openCreateForm} className="self-start sm:self-auto">
+          <Plus className="w-4 h-4" />
+          Create Persona
+        </Button>
       </div>
+
+      {/* Create/Edit Form Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fade-in">
+            <CardHeader className="p-4 sm:p-6 pb-2 flex flex-row items-center justify-between">
+              <CardTitle>{editingId ? 'Edit Persona' : 'Create Persona'}</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="h-8 w-8 p-0">
+                <X className="w-4 h-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-2 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Name *</label>
+                  <Input
+                    placeholder="Tech Insider"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Handle</label>
+                  <Input
+                    placeholder="techinsider"
+                    value={form.handle}
+                    onChange={(e) => setForm({ ...form, handle: e.target.value })}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Occupation / Role</label>
+                <Input
+                  placeholder="AI Researcher, Startup Founder..."
+                  value={form.occupation}
+                  onChange={(e) => setForm({ ...form, occupation: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Writing Style *</label>
+                <textarea
+                  className="w-full min-h-[100px] px-3 py-2 rounded-lg bg-[rgb(var(--muted))] border border-[rgb(var(--border))] text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary))]"
+                  placeholder="Describe how this persona writes. E.g.: Witty and sarcastic, uses tech jargon, often includes hot takes..."
+                  value={form.style}
+                  onChange={(e) => setForm({ ...form, style: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Topics</label>
+                <Input
+                  placeholder="AI, startups, coding, productivity (comma-separated)"
+                  value={form.topics}
+                  onChange={(e) => setForm({ ...form, topics: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Tone</label>
+                <Select
+                  value={form.tone}
+                  onChange={(e) => setForm({ ...form, tone: e.target.value })}
+                >
+                  <option value="">Select tone...</option>
+                  <option value="professional">Professional</option>
+                  <option value="casual">Casual</option>
+                  <option value="humorous">Humorous</option>
+                  <option value="sarcastic">Sarcastic</option>
+                  <option value="inspirational">Inspirational</option>
+                  <option value="controversial">Controversial</option>
+                </Select>
+              </div>
+              
+              {accounts.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Threads Account</label>
+                  <Select
+                    value={form.accountId}
+                    onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+                  >
+                    <option value="">Select account...</option>
+                    {accounts.map(acc => (
+                      <option key={acc.id} value={acc.id}>@{acc.name}</option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+              
+              <div className="flex gap-3 pt-2">
+                <Button variant="secondary" onClick={() => setShowForm(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={saving} className="flex-1">
+                  {saving ? 'Saving...' : (editingId ? 'Update' : 'Create')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Quick Generate */}
       <Card className="border-[rgb(var(--primary))/0.3]">
@@ -133,11 +331,12 @@ export default function Personas() {
         <EmptyState
           icon={<Ghost className="w-12 h-12" />}
           title="No personas yet"
-          description="Run the seed script to add some historical figures!"
+          description="Create your first persona to start generating content"
           action={
-            <code className="text-xs bg-[rgb(var(--muted))] px-3 py-2 rounded-lg">
-              npm run db:seed
-            </code>
+            <Button onClick={openCreateForm}>
+              <Plus className="w-4 h-4" />
+              Create Persona
+            </Button>
           }
         />
       ) : (
@@ -173,17 +372,35 @@ export default function Personas() {
                   {persona.style}
                 </p>
                 
-                <Button
-                  onClick={() => handleGenerate(persona)}
-                  disabled={generating || !testTopic.trim()}
-                  className={cn(
-                    'w-full mt-4 h-11 sm:h-10 touch-manipulation',
-                    generating && selectedPersona?.id === persona.id && 'animate-pulse-soft'
-                  )}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {generating && selectedPersona?.id === persona.id ? 'Generating...' : 'Generate Post'}
-                </Button>
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    onClick={() => handleGenerate(persona)}
+                    disabled={generating || !testTopic.trim()}
+                    className={cn(
+                      'flex-1 h-10 touch-manipulation',
+                      generating && selectedPersona?.id === persona.id && 'animate-pulse-soft'
+                    )}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {generating && selectedPersona?.id === persona.id ? 'Generating...' : 'Generate'}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleEdit(persona)}
+                    className="h-10 w-10 p-0"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(persona)}
+                    className="h-10 w-10 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
