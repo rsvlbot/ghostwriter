@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Save, ExternalLink, CheckCircle, XCircle, Cpu, Link2, Info, Zap, Users, Trash2 } from 'lucide-react'
+import { Save, ExternalLink, CheckCircle, XCircle, Cpu, Info, Zap, Users, Trash2 } from 'lucide-react'
 import { api } from '../lib/api'
 import toast from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Select, Slider, Skeleton, Badge } from '../components/ui'
@@ -154,23 +154,25 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {/* Threads Connection */}
+      {/* Threads Accounts */}
       <Card>
         <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex items-center gap-3 flex-1">
-              <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-neutral-800 border border-neutral-700">
-                <Link2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
-                <CardTitle className="text-base sm:text-lg">Threads Connection</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Connect to publish posts</CardDescription>
+                <CardTitle className="text-base sm:text-lg">Threads Accounts</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  {accounts.length} account{accounts.length !== 1 ? 's' : ''} connected
+                </CardDescription>
               </div>
             </div>
             {threadsStatus?.configured ? (
               <Badge variant="success" className="flex items-center gap-1 self-start sm:self-auto">
                 <CheckCircle className="w-3.5 h-3.5" />
-                Configured
+                API Ready
               </Badge>
             ) : (
               <Badge variant="destructive" className="flex items-center gap-1 self-start sm:self-auto">
@@ -180,9 +182,9 @@ export default function Settings() {
             )}
           </div>
         </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-2 sm:pt-0">
+        <CardContent className="p-4 sm:p-6 pt-2 sm:pt-0 space-y-4">
           {!threadsStatus?.configured && (
-            <div className="p-3 sm:p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
+            <div className="p-3 sm:p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
               <p className="text-sm text-amber-400">
                 Set <code className="px-1 py-0.5 rounded bg-[rgb(var(--muted))] text-xs">THREADS_APP_ID</code> and{' '}
                 <code className="px-1 py-0.5 rounded bg-[rgb(var(--muted))] text-xs">THREADS_APP_SECRET</code> in your environment.
@@ -190,41 +192,9 @@ export default function Settings() {
             </div>
           )}
 
-          <Button
-            variant="secondary"
-            onClick={handleConnectThreads}
-            disabled={!threadsStatus?.configured}
-            className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation"
-          >
-            <ExternalLink className="w-4 h-4" />
-            Connect Threads Account
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Connected Accounts */}
-      <Card>
-        <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-neutral-800 border border-neutral-700">
-              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            </div>
-            <div>
-              <CardTitle className="text-base sm:text-lg">Connected Accounts</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                {accounts.length} account{accounts.length !== 1 ? 's' : ''} connected
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-2 sm:pt-0">
-          {accounts.length === 0 ? (
-            <div className="text-center py-6 text-[rgb(var(--muted-foreground))]">
-              <p className="text-sm">No accounts connected yet</p>
-              <p className="text-xs mt-1">Click "Connect Threads Account" above to get started</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
+          {/* Connected accounts list */}
+          {accounts.length > 0 && (
+            <div className="space-y-2">
               {accounts.map((account) => (
                 <div 
                   key={account.id}
@@ -243,7 +213,7 @@ export default function Settings() {
                   </div>
                   <div className="flex items-center gap-2">
                     {account.threadsUserId ? (
-                      <Badge variant="success" className="text-xs">
+                      <Badge variant="success" className="text-xs hidden sm:flex">
                         <CheckCircle className="w-3 h-3 mr-1" />
                         Active
                       </Badge>
@@ -265,6 +235,22 @@ export default function Settings() {
               ))}
             </div>
           )}
+
+          {/* Add account button */}
+          <div className="pt-2 border-t border-[rgb(var(--border))]">
+            <Button
+              variant="secondary"
+              onClick={handleConnectThreads}
+              disabled={!threadsStatus?.configured}
+              className="w-full sm:w-auto h-11 sm:h-10 touch-manipulation"
+            >
+              <ExternalLink className="w-4 h-4" />
+              {accounts.length === 0 ? 'Connect Threads Account' : 'Add Another Account'}
+            </Button>
+            <p className="text-xs text-[rgb(var(--muted-foreground))] mt-2">
+              💡 To add a different account, log out of Threads first or use incognito mode
+            </p>
+          </div>
         </CardContent>
       </Card>
 
