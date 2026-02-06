@@ -85,6 +85,7 @@ export const api = {
 
   // Accounts
   getAccounts: () => request<any[]>('/api/accounts'),
+  disconnectAccount: (id: string) => request<void>(`/api/threads/disconnect/${id}`, { method: 'POST' }),
 
   // Trends
   getTrends: () => request<{ count: number; trends: any[] }>('/api/trends'),

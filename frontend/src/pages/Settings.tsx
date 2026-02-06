@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Save, ExternalLink, CheckCircle, XCircle, Cpu, Link2, Info, Zap } from 'lucide-react'
+import { Save, ExternalLink, CheckCircle, XCircle, Cpu, Link2, Info, Zap, Users, Trash2 } from 'lucide-react'
 import { api } from '../lib/api'
 import toast from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Select, Slider, Skeleton, Badge } from '../components/ui'
@@ -9,6 +9,7 @@ export default function Settings() {
   const [settings, setSettings] = useState<any>(null)
   const [systemInfo, setSystemInfo] = useState<any>(null)
   const [threadsStatus, setThreadsStatus] = useState<any>(null)
+  const [accounts, setAccounts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -18,18 +19,31 @@ export default function Settings() {
 
   const loadData = async () => {
     try {
-      const [settingsData, systemData, threadsData] = await Promise.all([
+      const [settingsData, systemData, threadsData, accountsData] = await Promise.all([
         api.getSettings(),
         api.getSystemInfo(),
         api.getThreadsStatus(),
+        api.getAccounts(),
       ])
       setSettings(settingsData)
       setSystemInfo(systemData)
       setThreadsStatus(threadsData)
+      setAccounts(accountsData)
     } catch (error) {
       toast.error('Failed to load settings')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDisconnect = async (accountId: string, accountName: string) => {
+    if (!confirm(`Disconnect ${accountName}?`)) return
+    try {
+      await api.disconnectAccount(accountId)
+      toast.success('Account disconnected')
+      loadData()
+    } catch (error) {
+      toast.error('Failed to disconnect')
     }
   }
 
@@ -185,6 +199,72 @@ export default function Settings() {
             <ExternalLink className="w-4 h-4" />
             Connect Threads Account
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Connected Accounts */}
+      <Card>
+        <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-neutral-800 border border-neutral-700">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-base sm:text-lg">Connected Accounts</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                {accounts.length} account{accounts.length !== 1 ? 's' : ''} connected
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 pt-2 sm:pt-0">
+          {accounts.length === 0 ? (
+            <div className="text-center py-6 text-[rgb(var(--muted-foreground))]">
+              <p className="text-sm">No accounts connected yet</p>
+              <p className="text-xs mt-1">Click "Connect Threads Account" above to get started</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {accounts.map((account) => (
+                <div 
+                  key={account.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-[rgb(var(--muted))/0.5] border border-[rgb(var(--border))]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium">
+                      {account.name?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">@{account.name}</p>
+                      <p className="text-xs text-[rgb(var(--muted-foreground))]">
+                        {account.threadsUserId ? `ID: ${account.threadsUserId}` : 'Not linked'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {account.threadsUserId ? (
+                      <Badge variant="success" className="text-xs">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Active
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">
+                        Disconnected
+                      </Badge>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDisconnect(account.id, account.name)}
+                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8 p-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
