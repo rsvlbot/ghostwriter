@@ -20,10 +20,16 @@ interface TrendingTopic {
  */
 export async function fetchGoogleTrends(): Promise<TrendingTopic[]> {
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    
     // Google Trends RSS feed
     const response = await fetch(
-      'https://trends.google.com/trending/rss?geo=US'
+      'https://trends.google.com/trending/rss?geo=US',
+      { signal: controller.signal }
     );
+    
+    clearTimeout(timeout);
     
     if (!response.ok) {
       console.error('Google Trends fetch failed:', response.status);
@@ -35,7 +41,8 @@ export async function fetchGoogleTrends(): Promise<TrendingTopic[]> {
 
     // Simple XML parsing for <title> tags within <item>
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    const titleRegex = /<title><!\[CDATA\[(.*?)\]\]><\/title>/;
+    // Support both CDATA and plain text titles
+    const titleRegex = /<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/;
     const linkRegex = /<link>(.*?)<\/link>/;
     const trafficRegex = /<ht:approx_traffic>(.*?)<\/ht:approx_traffic>/;
 
@@ -46,7 +53,7 @@ export async function fetchGoogleTrends(): Promise<TrendingTopic[]> {
       const linkMatch = linkRegex.exec(item);
       const trafficMatch = trafficRegex.exec(item);
 
-      if (titleMatch) {
+      if (titleMatch && titleMatch[1]) {
         topics.push({
           title: titleMatch[1],
           source: 'google',
@@ -119,16 +126,25 @@ export async function fetchRedditTrends(
 
   for (const subreddit of subreddits) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      
       const response = await fetch(
         `https://www.reddit.com/r/${subreddit}/hot.json?limit=10`,
         {
           headers: {
-            'User-Agent': 'Ghostwriter/1.0'
-          }
+            'User-Agent': 'Mozilla/5.0 (compatible; Ghostwriter/1.0; +https://ghostwriter.app)'
+          },
+          signal: controller.signal
         }
       );
+      
+      clearTimeout(timeout);
 
-      if (!response.ok) continue;
+      if (!response.ok) {
+        console.error(`Reddit r/${subreddit} returned ${response.status}`);
+        continue;
+      }
 
       const data = await response.json() as {
         data: {
@@ -136,9 +152,11 @@ export async function fetchRedditTrends(
             data: {
               title: string;
               url: string;
+              permalink: string;
               score: number;
               num_comments: number;
               subreddit: string;
+              stickied: boolean;
             };
           }>;
         };
@@ -146,18 +164,22 @@ export async function fetchRedditTrends(
 
       for (const post of data.data.children) {
         // Skip stickied/pinned posts
-        if (post.data.score < 100) continue;
+        if (post.data.stickied) continue;
 
         topics.push({
           title: post.data.title,
           source: 'reddit',
-          url: `https://reddit.com${post.data.url}`,
+          url: `https://reddit.com${post.data.permalink}`,
           score: post.data.score,
           description: `r/${post.data.subreddit} • ${post.data.score} upvotes`
         });
       }
-    } catch (error) {
-      console.error(`Error fetching Reddit r/${subreddit}:`, error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error(`Reddit r/${subreddit} timeout`);
+      } else {
+        console.error(`Error fetching Reddit r/${subreddit}:`, error.message);
+      }
     }
   }
 
