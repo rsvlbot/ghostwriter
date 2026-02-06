@@ -30,8 +30,9 @@ router.get('/', async (req: Request, res: Response) => {
 
   // Add available models list
   const availableModels = [
+    { id: 'claude-opus-4-6', name: 'Claude Opus 4.6 (Latest)', provider: 'Anthropic' },
+    { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', provider: 'Anthropic' },
     { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 (Fast)', provider: 'Anthropic' },
-    { id: 'claude-opus-4-20250514', name: 'Claude Opus 4 (Best)', provider: 'Anthropic' },
   ];
 
   res.json({
