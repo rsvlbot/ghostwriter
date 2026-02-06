@@ -72,12 +72,11 @@ Requirements:
 - Make it shareable - something people want to screenshot
 - End strong
 
-CRITICAL RULES:
-1. MUST be under 480 characters total. Threads rejects over 500.
-2. MUST be ONE continuous paragraph — NO line breaks, NO newlines.
-3. Just flowing sentences one after another.
+ABSOLUTE RULES — violation means failure:
+- UNDER 480 characters total (Threads rejects over 500)
+- ONE continuous paragraph. Never use line breaks or newlines between sentences. All sentences must flow together in a single block of text like you would see in a book paragraph.
 
-Write the post now (single paragraph, under 480 chars):`;
+Write the post now as a single continuous paragraph under 480 characters:`;
 
   const response = await anthropic.messages.create({
     model,
@@ -96,8 +95,6 @@ Write the post now (single paragraph, under 480 chars):`;
     if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
       text = text.slice(1, -1);
     }
-    // Force single paragraph — replace newlines with spaces
-    text = text.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
     return text;
   }
 
