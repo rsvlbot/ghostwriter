@@ -30,11 +30,8 @@ router.get('/', async (req: Request, res: Response) => {
 
   // Add available models list
   const availableModels = [
-    { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'Anthropic' },
-    { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', provider: 'Anthropic' },
-    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
-    { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },
-    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI' }
+    { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 (Fast)', provider: 'Anthropic' },
+    { id: 'claude-opus-4-20250514', name: 'Claude Opus 4 (Best)', provider: 'Anthropic' },
   ];
 
   res.json({
@@ -106,7 +103,7 @@ router.get('/ai/test', async (req: Request, res: Response) => {
     const settings = await prisma.settings.findUnique({
       where: { id: 'default' }
     });
-    const model = settings?.aiModel || 'claude-sonnet-4-5-20250514';
+    const model = settings?.aiModel || 'claude-sonnet-4-20250514';
 
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
