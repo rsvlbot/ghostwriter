@@ -65,6 +65,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ personaId, topic, saveAsDraft }),
     }),
+  generateFromTrend: (personaId: string, topic: string, topicUrl?: string, topicDescription?: string, saveAsDraft = true) => 
+    request<{ posts: { id?: string; content: string }[] }>('/api/generate', {
+      method: 'POST',
+      body: JSON.stringify({ personaId, topic, topicUrl, topicDescription, saveAsDraft }),
+    }),
   testGenerate: (persona: any, topic: string) =>
     request<{ content: string }>('/api/generate/test', {
       method: 'POST',

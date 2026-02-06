@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { generatePost, generateMultiplePosts } from '../services/ai';
+import { fetchArticleContent } from '../services/content';
 import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
@@ -9,6 +10,8 @@ const router = Router();
 const GenerateSchema = z.object({
   personaId: z.string().uuid(),
   topic: z.string().min(1),
+  topicUrl: z.string().url().optional(),
+  topicDescription: z.string().optional(),
   count: z.number().min(1).max(5).default(1),
   saveAsDraft: z.boolean().default(false),
   accountId: z.string().uuid().optional()
@@ -86,7 +89,7 @@ const TestGenerateSchema = z.object({
  */
 router.post('/', async (req: Request, res: Response) => {
   const prisma: PrismaClient = req.app.locals.prisma;
-  const { personaId, topic, count, saveAsDraft, accountId } = GenerateSchema.parse(req.body);
+  const { personaId, topic, topicUrl, topicDescription, count, saveAsDraft, accountId } = GenerateSchema.parse(req.body);
 
   const persona = await prisma.persona.findUnique({
     where: { id: personaId }
@@ -100,10 +103,24 @@ router.post('/', async (req: Request, res: Response) => {
     where: { id: 'default' }
   });
 
+  // Fetch article content if URL provided
+  let topicContext = topicDescription || '';
+  if (topicUrl) {
+    try {
+      const articleContent = await fetchArticleContent(topicUrl);
+      if (articleContent) {
+        topicContext = articleContent;
+      }
+    } catch (error) {
+      console.error('Failed to fetch article content:', error);
+    }
+  }
+
   if (count === 1) {
     const content = await generatePost({
       persona,
       topic,
+      topicContext,
       model: settings?.aiModel,
       temperature: settings?.aiTemp
     });
@@ -127,6 +144,7 @@ router.post('/', async (req: Request, res: Response) => {
       {
         persona,
         topic,
+        topicContext,
         model: settings?.aiModel,
         temperature: settings?.aiTemp
       },

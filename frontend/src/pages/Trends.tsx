@@ -63,7 +63,7 @@ export default function Trends() {
   const handleGenerateFromTrend = async (trend: Trend, personaId: string) => {
     setGeneratingFor(`${trend.title}-${personaId}`)
     try {
-      await api.generate(personaId, trend.title, true)
+      await api.generateFromTrend(personaId, trend.title, trend.url, trend.description, true)
       toast.success('Post generated and saved as draft!')
     } catch (error) {
       toast.error('Failed to generate post')

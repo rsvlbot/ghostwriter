@@ -3,11 +3,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const zod_1 = require("zod");
 const ai_1 = require("../services/ai");
+const content_1 = require("../services/content");
 const errorHandler_1 = require("../middleware/errorHandler");
 const router = (0, express_1.Router)();
 const GenerateSchema = zod_1.z.object({
     personaId: zod_1.z.string().uuid(),
     topic: zod_1.z.string().min(1),
+    topicUrl: zod_1.z.string().url().optional(),
+    topicDescription: zod_1.z.string().optional(),
     count: zod_1.z.number().min(1).max(5).default(1),
     saveAsDraft: zod_1.z.boolean().default(false),
     accountId: zod_1.z.string().uuid().optional()
@@ -83,7 +86,7 @@ const TestGenerateSchema = zod_1.z.object({
  */
 router.post('/', async (req, res) => {
     const prisma = req.app.locals.prisma;
-    const { personaId, topic, count, saveAsDraft, accountId } = GenerateSchema.parse(req.body);
+    const { personaId, topic, topicUrl, topicDescription, count, saveAsDraft, accountId } = GenerateSchema.parse(req.body);
     const persona = await prisma.persona.findUnique({
         where: { id: personaId }
     });
@@ -93,10 +96,24 @@ router.post('/', async (req, res) => {
     const settings = await prisma.settings.findUnique({
         where: { id: 'default' }
     });
+    // Fetch article content if URL provided
+    let topicContext = topicDescription || '';
+    if (topicUrl) {
+        try {
+            const articleContent = await (0, content_1.fetchArticleContent)(topicUrl);
+            if (articleContent) {
+                topicContext = articleContent;
+            }
+        }
+        catch (error) {
+            console.error('Failed to fetch article content:', error);
+        }
+    }
     if (count === 1) {
         const content = await (0, ai_1.generatePost)({
             persona,
             topic,
+            topicContext,
             model: settings?.aiModel,
             temperature: settings?.aiTemp
         });
@@ -120,6 +137,7 @@ router.post('/', async (req, res) => {
         const contents = await (0, ai_1.generateMultiplePosts)({
             persona,
             topic,
+            topicContext,
             model: settings?.aiModel,
             temperature: settings?.aiTemp
         }, count);

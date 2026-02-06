@@ -8,6 +8,7 @@ interface GenerateOptions {
         systemPrompt: string;
     };
     topic: string;
+    topicContext?: string;
     model?: string;
     temperature?: number;
 }

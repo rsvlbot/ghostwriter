@@ -14,12 +14,13 @@ interface GenerateOptions {
     systemPrompt: string;
   };
   topic: string;
+  topicContext?: string;
   model?: string;
   temperature?: number;
 }
 
 export async function generatePost(options: GenerateOptions): Promise<string> {
-  const { persona, topic, model = 'claude-sonnet-4-20250514', temperature = 0.8 } = options;
+  const { persona, topic, topicContext, model = 'claude-sonnet-4-20250514', temperature = 0.8 } = options;
 
   const systemPrompt = `You are ${persona.name}${persona.era ? ` (${persona.era})` : ''}${persona.occupation ? `, ${persona.occupation}` : ''}.
 
@@ -39,11 +40,25 @@ IMPORTANT RULES:
 6. Comment on modern topics through the lens of your historical perspective
 7. DO NOT use hashtags or emojis
 8. DO NOT break character or mention you are AI
-9. Write in English unless specified otherwise`;
+9. Write in English unless specified otherwise
+10. If given context about a topic, USE IT - comment on the ACTUAL content, not just the title`;
 
-  const userPrompt = `Write a Threads post about this topic: ${topic}
+  let userPrompt = `Write a Threads post about this topic: ${topic}`;
+  
+  if (topicContext) {
+    userPrompt += `
 
-Remember: You ARE ${persona.name}. React to this modern topic as they would, with their unique perspective and voice.`;
+Here is the actual content/context about this topic:
+---
+${topicContext}
+---
+
+Use this context to write an informed, specific post about what's actually happening with "${topic}". Don't say you don't know about it - you have the context above.`;
+  }
+  
+  userPrompt += `
+
+Remember: You ARE ${persona.name}. React to this topic with your unique perspective and voice.`;
 
   const response = await anthropic.messages.create({
     model,
