@@ -333,6 +333,10 @@ router.post('/:id/publish', async (req, res) => {
             throw new errorHandler_1.AppError('Token expired and refresh failed. Please reconnect Threads account.', 401);
         }
     }
+    // Threads API limit: 500 characters
+    if (post.content.length > 500) {
+        throw new errorHandler_1.AppError(`Post is ${post.content.length} characters. Threads limit is 500.`, 400);
+    }
     const result = await (0, threads_1.publishToThreads)({
         accessToken: currentToken,
         userId: post.account.threadsUserId

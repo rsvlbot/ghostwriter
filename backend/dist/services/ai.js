@@ -28,7 +28,7 @@ VIRAL SOCIAL MEDIA RULES:
 4. Provide REAL VALUE - insight, advice, or perspective the reader can use
 5. Be specific, not generic. Numbers, examples, concrete details.
 6. End with a thought that resonates or a subtle call to reflection
-7. Keep under 500 characters - every word must earn its place
+7. STRICT LIMIT: Keep under 480 characters (Threads max is 500). Count carefully. Every word must earn its place
 8. NO hashtags, NO emojis, NO "I think" or "I believe" - just state it
 9. Make readers want to screenshot and share
 10. If given context about a topic, give SPECIFIC insights about it
@@ -56,6 +56,8 @@ Requirements:
 - Make it shareable - something people want to screenshot
 - End strong
 
+CRITICAL: The post MUST be under 480 characters total. Count carefully. Threads will reject anything over 500.
+
 Write the post now:`;
     const response = await anthropic.messages.create({
         model,
@@ -68,7 +70,12 @@ Write the post now:`;
     });
     const content = response.content[0];
     if (content.type === 'text') {
-        return content.text.trim();
+        let text = content.text.trim();
+        // Remove surrounding quotes if AI wraps the post
+        if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
+            text = text.slice(1, -1);
+        }
+        return text;
     }
     throw new Error('Unexpected response format from AI');
 }

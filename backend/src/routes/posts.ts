@@ -362,6 +362,11 @@ router.post('/:id/publish', async (req: Request, res: Response) => {
     }
   }
   
+  // Threads API limit: 500 characters
+  if (post.content.length > 500) {
+    throw new AppError(`Post is ${post.content.length} characters. Threads limit is 500.`, 400);
+  }
+  
   const result = await publishToThreads(
     {
       accessToken: currentToken,
