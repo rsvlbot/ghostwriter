@@ -1,0 +1,37 @@
+<svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#e8e8e8"/>
+      <stop offset="100%" stop-color="#c0c0c0"/>
+    </linearGradient>
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2a2a2a"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  
+  <rect x="56" y="56" width="400" height="400" rx="80" fill="url(#bodyGrad)"/>
+  <rect x="96" y="140" width="320" height="180" rx="40" fill="url(#screenGrad)"/>
+  
+  <g filter="url(#glow)">
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0,0; 0,-5; 0,0; 0,3; 0,0" dur="3s" repeatCount="indefinite"/>
+      <path d="M256 180 C220 180 192 208 192 244 L192 290 C192 294 196 296 199 294 L212 284 C216 281 222 281 226 284 L240 294 C244 297 250 297 254 294 L268 284 C272 281 278 281 282 284 L296 294 C300 297 306 297 310 294 L324 284 C328 281 334 281 338 284 L351 294 C354 296 358 294 358 290 L358 244 C358 208 330 180 294 180 L256 180 Z" fill="#f97316">
+        <animate attributeName="opacity" values="0.85;1;0.85" dur="2s" repeatCount="indefinite"/>
+      </path>
+      <ellipse cx="232" cy="230" rx="12" ry="14" fill="white"/>
+      <ellipse cx="280" cy="230" rx="12" ry="14" fill="white"/>
+      <ellipse cx="234" cy="232" rx="6" ry="7" fill="#1a1a1a">
+        <animate attributeName="cx" values="234;230;234;238;234" dur="4s" repeatCount="indefinite"/>
+      </ellipse>
+      <ellipse cx="282" cy="232" rx="6" ry="7" fill="#1a1a1a">
+        <animate attributeName="cx" values="282;278;282;286;282" dur="4s" repeatCount="indefinite"/>
+      </ellipse>
+    </g>
+  </g>
+</svg>

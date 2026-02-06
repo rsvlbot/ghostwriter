@@ -45,12 +45,15 @@ router.post('/auth/callback', async (req: Request, res: Response) => {
   const tokenExpiresAt = new Date();
   tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 60);
 
+  // Convert userId to string (API returns number, DB expects string)
+  const userIdStr = String(userId);
+
   // Create or update account
   const account = await prisma.account.upsert({
-    where: { threadsUserId: userId },
+    where: { threadsUserId: userIdStr },
     create: {
-      name: profile.username || profile.name || `Threads User ${userId}`,
-      threadsUserId: userId,
+      name: profile.username || profile.name || `Threads User ${userIdStr}`,
+      threadsUserId: userIdStr,
       accessToken,
       tokenExpiresAt,
       active: true

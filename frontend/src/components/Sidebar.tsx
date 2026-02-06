@@ -3,7 +3,6 @@ import { cn } from '../lib/utils'
 import { Button } from './ui'
 import { Drawer } from './ui/drawer'
 import { useState } from 'react'
-import { GhostwriterIcon } from './ui/logo'
 
 type Page = 'dashboard' | 'personas' | 'posts' | 'trends' | 'schedules' | 'settings'
 
@@ -24,9 +23,7 @@ const navItems = [
 function Logo() {
   return (
     <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-xl bg-[rgb(var(--primary))] flex items-center justify-center shadow-lg shadow-[rgb(var(--primary))/0.3]">
-        <GhostwriterIcon size={28} className="text-white" />
-      </div>
+      <img src="/logo.svg" alt="Ghostwriter" className="w-11 h-11 drop-shadow-lg" />
       <div>
         <span className="text-lg font-bold text-white">
           Ghostwriter

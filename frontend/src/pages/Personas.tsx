@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Sparkles, Wand2, Search } from 'lucide-react'
+import { Sparkles, Wand2, Search, Ghost } from 'lucide-react'
 import { api } from '../lib/api'
 import toast from 'react-hot-toast'
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Skeleton, EmptyState, Badge } from '../components/ui'
 import { Avatar, AvatarFallback } from '../components/ui/avatar'
-import { GhostwriterIcon } from '../components/ui/logo'
 import { cn } from '../lib/utils'
 
 interface Persona {
@@ -132,7 +131,7 @@ export default function Personas() {
       {/* Personas Grid */}
       {personas.length === 0 ? (
         <EmptyState
-          icon={<GhostwriterIcon size={48} className="text-[rgb(var(--muted-foreground))]" />}
+          icon={<Ghost className="w-12 h-12" />}
           title="No personas yet"
           description="Run the seed script to add some historical figures!"
           action={
@@ -153,7 +152,7 @@ export default function Personas() {
                 <div className="flex items-start gap-3 sm:gap-4">
                   <Avatar className="h-12 w-12 sm:h-14 sm:w-14 ring-2 ring-[rgb(var(--border))] group-hover:ring-[rgb(var(--primary))/0.5] transition-all flex-shrink-0">
                     <AvatarFallback className="text-base sm:text-lg font-bold bg-neutral-800">
-                      <GhostwriterIcon size={24} className="text-[rgb(var(--primary))]" />
+                      <Ghost className="w-6 h-6 text-[rgb(var(--primary))]" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">

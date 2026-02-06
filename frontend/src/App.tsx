@@ -7,10 +7,14 @@ import Posts from './pages/Posts'
 import Trends from './pages/Trends'
 import Schedules from './pages/Schedules'
 import Settings from './pages/Settings'
+import AuthCallback from './pages/AuthCallback'
 
 type Page = 'dashboard' | 'personas' | 'posts' | 'trends' | 'schedules' | 'settings'
 
-function App() {
+// Simple router check
+const isAuthCallback = window.location.pathname === '/auth/callback'
+
+function MainApp() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
 
   const renderPage = () => {
@@ -69,6 +73,13 @@ function App() {
       </main>
     </div>
   )
+}
+
+function App() {
+  if (isAuthCallback) {
+    return <AuthCallback />
+  }
+  return <MainApp />
 }
 
 export default App
