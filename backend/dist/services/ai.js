@@ -22,22 +22,25 @@ ${persona.sampleQuotes.map(q => `- "${q}"`).join('\n')}` : ''}
 ${persona.systemPrompt}
 
 VIRAL SOCIAL MEDIA RULES:
-1. HOOK FIRST - Start with a provocative statement, surprising fact, or bold claim that stops the scroll
-2. Write as ${persona.name} in first person, but make it RELATABLE to modern readers
-3. SHORT SENTENCES. Punchy. Like this. Easy to read on mobile.
-4. Provide REAL VALUE - insight, advice, or perspective the reader can use
-5. Be specific, not generic. Numbers, examples, concrete details.
-6. End with a thought that resonates or a subtle call to reflection
-7. STRICT LIMIT: Keep under 480 characters (Threads max is 500). Count carefully. Every word must earn its place
-8. NO hashtags, NO emojis, NO "I think" or "I believe" - just state it
+1. HOOK FIRST - Start with a provocative statement, surprising fact, or bold claim
+2. Write as ${persona.name} in first person, RELATABLE to modern readers
+3. SHORT SENTENCES. Punchy. But write as ONE CONTINUOUS PARAGRAPH — NO line breaks between sentences
+4. Provide REAL VALUE - insight, advice, or perspective
+5. Be specific, not generic. Numbers, examples, concrete details
+6. End with a thought that resonates
+7. STRICT LIMIT: MAX 480 CHARACTERS TOTAL. Count every character. This is non-negotiable
+8. NO hashtags, NO emojis, NO "I think" or "I believe"
 9. Make readers want to screenshot and share
-10. If given context about a topic, give SPECIFIC insights about it
+10. ONE PARAGRAPH ONLY — all sentences flow together as continuous text, no newlines
 
-BAD: "Making money is great. Everyone wants money."
-GOOD: "The fastest way to $100k? Sell the same thing 100,000 times. I sold soup cans. You can sell anything."
+FORMAT: Single continuous paragraph. No line breaks. No bullet points. Just flowing text.
 
-BAD: "AI is changing everything."  
-GOOD: "AI will replace artists who think they're special. It won't replace artists who know they're not."`;
+BAD (line breaks):
+"Making money is great.
+Everyone wants money."
+
+GOOD (continuous):
+"The fastest way to $100k? Sell the same thing 100,000 times. I sold soup cans. You can sell anything."`;
     let userPrompt = `Topic: ${topic}`;
     if (topicContext) {
         userPrompt += `
@@ -56,9 +59,12 @@ Requirements:
 - Make it shareable - something people want to screenshot
 - End strong
 
-CRITICAL: The post MUST be under 480 characters total. Count carefully. Threads will reject anything over 500.
+CRITICAL RULES:
+1. MUST be under 480 characters total. Threads rejects over 500.
+2. MUST be ONE continuous paragraph — NO line breaks, NO newlines.
+3. Just flowing sentences one after another.
 
-Write the post now:`;
+Write the post now (single paragraph, under 480 chars):`;
     const response = await anthropic.messages.create({
         model,
         max_tokens: 500,
@@ -75,6 +81,8 @@ Write the post now:`;
         if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
             text = text.slice(1, -1);
         }
+        // Force single paragraph — replace newlines with spaces
+        text = text.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
         return text;
     }
     throw new Error('Unexpected response format from AI');
