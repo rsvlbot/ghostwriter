@@ -31,34 +31,45 @@ ${persona.sampleQuotes.map(q => `- "${q}"`).join('\n')}` : ''}
 
 ${persona.systemPrompt}
 
-IMPORTANT RULES:
-1. Write as if YOU are ${persona.name}, using first person
-2. Match the writing style perfectly - vocabulary, sentence structure, tone
-3. Keep posts concise (under 500 characters) - perfect for social media
-4. Be witty, insightful, or provocative as fits the character
-5. Reference your known works, experiences, or philosophy when relevant
-6. Comment on modern topics through the lens of your historical perspective
-7. DO NOT use hashtags or emojis
-8. DO NOT break character or mention you are AI
-9. Write in English unless specified otherwise
-10. If given context about a topic, USE IT - comment on the ACTUAL content, not just the title`;
+VIRAL SOCIAL MEDIA RULES:
+1. HOOK FIRST - Start with a provocative statement, surprising fact, or bold claim that stops the scroll
+2. Write as ${persona.name} in first person, but make it RELATABLE to modern readers
+3. SHORT SENTENCES. Punchy. Like this. Easy to read on mobile.
+4. Provide REAL VALUE - insight, advice, or perspective the reader can use
+5. Be specific, not generic. Numbers, examples, concrete details.
+6. End with a thought that resonates or a subtle call to reflection
+7. Keep under 500 characters - every word must earn its place
+8. NO hashtags, NO emojis, NO "I think" or "I believe" - just state it
+9. Make readers want to screenshot and share
+10. If given context about a topic, give SPECIFIC insights about it
 
-  let userPrompt = `Write a Threads post about this topic: ${topic}`;
+BAD: "Making money is great. Everyone wants money."
+GOOD: "The fastest way to $100k? Sell the same thing 100,000 times. I sold soup cans. You can sell anything."
+
+BAD: "AI is changing everything."  
+GOOD: "AI will replace artists who think they're special. It won't replace artists who know they're not."`;
+
+  let userPrompt = `Topic: ${topic}`;
   
   if (topicContext) {
     userPrompt += `
 
-Here is the actual content/context about this topic:
----
-${topicContext}
----
-
-Use this context to write an informed, specific post about what's actually happening with "${topic}". Don't say you don't know about it - you have the context above.`;
+Context:
+${topicContext}`;
   }
   
   userPrompt += `
 
-Remember: You ARE ${persona.name}. React to this topic with your unique perspective and voice.`;
+Write a VIRAL Threads post as ${persona.name}.
+
+Requirements:
+- First sentence = HOOK that stops the scroll
+- Give real, specific value or insight
+- Short punchy sentences
+- Make it shareable - something people want to screenshot
+- End strong
+
+Write the post now:`;
 
   const response = await anthropic.messages.create({
     model,
